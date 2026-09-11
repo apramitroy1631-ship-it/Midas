@@ -12,6 +12,8 @@ discipline.
 graph, multi-tenancy, and why autonomy is a policy flag rather than a hard-coded
 behaviour.
 **→ [docs/API.md](docs/API.md)** — route reference and the SSE streaming contract.
+**→ [docs/DEPLOY.md](docs/DEPLOY.md)** — hosting the console on Vercel and the
+backend on Railway (or any container host).
 
 ---
 
