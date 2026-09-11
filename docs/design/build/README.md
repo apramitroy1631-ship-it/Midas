@@ -1,7 +1,7 @@
 # Design deck build
 
 Regenerates [`../BuildX-UIUX-Demo-Design.pdf`](../BuildX-UIUX-Demo-Design.pdf) — a
-19-page walkthrough of the console, styled to match
+21-page walkthrough of the console, styled to match
 [cmartsolutions.com](https://cmartsolutions.com)'s theme (near-black ground, a
 single restrained red accent, Bricolage Grotesque + Inter). See the module
 docstring in `build_pdf.py` for the exact tokens and where each one came from.
@@ -11,6 +11,15 @@ to match the site. The embedded screenshots and the "Color & Type" slide
 documenting the app's real CSS tokens are **not** — those show the actual
 shipped BuildX console, which is still blue/purple, since this was a deck
 restyle, not a product rebrand.
+
+Built for an executive reader, not just an engineer: a real PDF outline
+(bookmarks — every viewer's sidebar TOC, click to jump, no scrolling), an
+Agenda slide and an "At a Glance" KPI slide up front, and every one of the
+eleven screen slides leads with a one-line business takeaway before any
+implementation detail. Five of those eleven pull out a real number from the
+actual run behind this deck (93/88 QA scores, 1 revision cycle, 100% trace
+replay, zero review-queue backlog, 100% decisions logged) as a big stat
+callout, so the deck doesn't read as the same template repeated eleven times.
 
 ## Regenerating
 
