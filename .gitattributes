@@ -1,0 +1,11 @@
+# Explicit binary marking, so line-ending conversion never touches these —
+# relying on Git's NUL-byte heuristic alone is fine in practice but noisy
+# (it still prints a CRLF warning before deciding) and one edge case away
+# from actually corrupting a binary file on a Windows checkout.
+*.pdf   -text binary
+*.png   -text binary
+*.jpg   -text binary
+*.jpeg  -text binary
+*.ico   -text binary
+*.woff  -text binary
+*.woff2 -text binary
