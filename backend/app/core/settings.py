@@ -1,9 +1,11 @@
 # app/core/settings.py
 """Process-wide configuration, loaded from environment / .env."""
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     app_name: str = "BuildX Autonomous Marketing"
 
     # --- Control plane ---
@@ -43,10 +45,6 @@ class Settings(BaseSettings):
     langsmith_endpoint: str = "https://api.smith.langchain.com"
     langsmith_api_key: str = ""
     langsmith_project: str = "BuildX"
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
 
 
 settings = Settings()
