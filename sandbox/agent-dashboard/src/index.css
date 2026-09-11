@@ -1,0 +1,59 @@
+:root {
+  --bg: #0c0e11;
+  --panel: #14171b;
+  --panel-raised: #191d22;
+  --border: #262b31;
+  --border-soft: #1d2126;
+  --text: #e7e5e0;
+  --text-muted: #868d96;
+  --text-dim: #565d66;
+
+  --idle: #3a4048;
+  --running: #e8a33d;
+  --done: #4fae7a;
+  --error: #e5555a;
+
+  --kartik: #4fb8ac;
+  --kartik-dim: #234642;
+  --shivay: #a78beb;
+  --shivay-dim: #362b52;
+
+  --mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  --sans: "IBM Plex Sans", -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(232, 163, 61, 0.25);
+}
+
+button {
+  font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
