@@ -1,0 +1,525 @@
+<title>Console Concept</title>
+<style>
+  /* ============================================================
+     Design plan
+     Color   — paper #F7F8FA / ink #14161A / line #E4E6EA /
+               muted #6B7280 / signal #0E6F62 (a sober operational
+               teal — not the product's old blue/purple, not the
+               red pitched last round). Semantic state (published,
+               blocked, revising) is separate: green / amber / red,
+               used only on state, never as decoration.
+     Type    — IBM Plex Sans for headings and body (a face built
+               for enterprise software legibility, not a picked-
+               for-vibes display font), IBM Plex Mono for anything
+               the system generated — IDs, scores, timestamps.
+     Layout  — a quiet operations console: slim top bar, a text
+               nav rail with no active-state block, wide breathing
+               room between sections, hairline dividers instead of
+               boxed cards, tabular numerals everywhere digits
+               line up.
+     ============================================================ */
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --paper: #f7f8fa;
+    --paper-raised: #ffffff;
+    --ink: #14161a;
+    --ink-soft: #40444c;
+    --muted: #6b7280;
+    --faint: #9aa1ab;
+    --line: #e4e6ea;
+    --line-soft: #edeef1;
+    --signal: #0e6f62;
+    --signal-soft: #e4f2ef;
+    --ok: #1a7f4b;
+    --ok-soft: #e6f4ea;
+    --warn: #a35b00;
+    --warn-soft: #fbf0dd;
+    --danger: #b42318;
+    --danger-soft: #fbe9e7;
+    --shadow: 0 1px 2px rgba(20, 22, 26, 0.04);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #101214;
+      --paper-raised: #16181b;
+      --ink: #eef0f2;
+      --ink-soft: #c7cbd1;
+      --muted: #8b929c;
+      --faint: #5b6169;
+      --line: #262a2f;
+      --line-soft: #1d2024;
+      --signal: #35a293;
+      --signal-soft: #133330;
+      --ok: #3fb374;
+      --ok-soft: #12291c;
+      --warn: #d99a3d;
+      --warn-soft: #2e2412;
+      --danger: #e5695d;
+      --danger-soft: #301715;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #101214;
+    --paper-raised: #16181b;
+    --ink: #eef0f2;
+    --ink-soft: #c7cbd1;
+    --muted: #8b929c;
+    --faint: #5b6169;
+    --line: #262a2f;
+    --line-soft: #1d2024;
+    --signal: #35a293;
+    --signal-soft: #133330;
+    --ok: #3fb374;
+    --ok-soft: #12291c;
+    --warn: #d99a3d;
+    --warn-soft: #2e2412;
+    --danger: #e5695d;
+    --danger-soft: #301715;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- meta bar (concept-review chrome, not part of the app itself) ---- */
+  .meta {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 28px; border-bottom: 1px solid var(--line);
+    background: var(--paper-raised);
+  }
+  .meta-title { font-weight: 600; font-size: 14px; }
+  .meta-sub { color: var(--muted); font-size: 12.5px; }
+  .tabs { display: flex; gap: 4px; margin-left: auto; }
+  .tab {
+    font-family: inherit; font-size: 12.5px; font-weight: 500;
+    padding: 7px 14px; border-radius: 7px; border: 1px solid transparent;
+    background: transparent; color: var(--muted); cursor: pointer;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { background: var(--paper); border-color: var(--line); color: var(--ink); }
+  .tab:focus-visible { outline: 2px solid var(--signal); outline-offset: 1px; }
+
+  .frame { min-height: calc(100vh - 53px); }
+  .screen { display: none; }
+  .screen.active { display: flex; }
+
+  /* ---- console shell ---- */
+  .rail {
+    width: 196px; flex-shrink: 0; padding: 28px 14px;
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .rail-brand { display: flex; align-items: center; gap: 9px; padding: 0 10px 26px; }
+  .rail-mark {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--signal);
+    display: grid; place-items: center; color: #fff; font-size: 10.5px; font-weight: 700; font-family: "IBM Plex Mono", monospace;
+    flex-shrink: 0;
+  }
+  .rail-name { font-weight: 600; font-size: 13.5px; letter-spacing: -0.1px; }
+  .rail-group { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--faint); padding: 16px 10px 6px; font-weight: 500; }
+  .rail-item {
+    display: flex; align-items: center; gap: 9px; padding: 7px 10px;
+    border-radius: 6px; color: var(--ink-soft); font-size: 13px;
+    border-left: 2px solid transparent; cursor: default;
+  }
+  .rail-item.current { color: var(--ink); font-weight: 600; border-left-color: var(--signal); background: var(--line-soft); }
+  .rail-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.55; flex-shrink: 0; }
+
+  .main { flex: 1; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 32px; border-bottom: 1px solid var(--line);
+  }
+  .topbar h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.1px; }
+  .status-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-left: 4px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+  .spacer { flex: 1; }
+  .tenant { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-soft); }
+  .tenant-mark { width: 20px; height: 20px; border-radius: 5px; background: var(--signal-soft); color: var(--signal); display: grid; place-items: center; font-size: 9.5px; font-weight: 700; font-family: "IBM Plex Mono", monospace; }
+
+  .content { padding: 30px 32px 60px; max-width: 1180px; }
+
+  /* ---- typography rhythm ---- */
+  h2.section { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 0 0 16px; }
+  h2.section.first { margin-top: 0; }
+
+  /* ---- overview: stat row, no boxed cards, just rhythm + dividers ---- */
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper-raised); }
+  .stat { padding: 20px 22px; border-right: 1px solid var(--line); }
+  .stat:last-child { border-right: none; }
+  .stat-label { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; line-height: 1; }
+  .stat-value.small { font-size: 20px; }
+  .stat-hint { font-size: 11.5px; color: var(--faint); margin-top: 6px; }
+
+  .two-col { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; margin-top: 40px; }
+  .kv { display: flex; flex-direction: column; gap: 0; }
+  .kv-row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+  .kv-row:last-child { border-bottom: none; }
+  .kv-key { color: var(--muted); }
+  .kv-val { font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; color: var(--faint); padding: 0 14px 10px 0; border-bottom: 1px solid var(--line); }
+  td { padding: 12px 14px 12px 0; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .goal-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 5px; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.muted { background: var(--line-soft); color: var(--muted); }
+  .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* ---- launch / pipeline: quiet vertical timeline ---- */
+  .brief { display: flex; gap: 34px; align-items: flex-start; margin-bottom: 44px; }
+  .brief-field { flex: 1; }
+  .brief-label { font-size: 11.5px; color: var(--muted); margin-bottom: 5px; }
+  .brief-value { font-size: 14px; font-weight: 500; }
+  .brief-value.muted { color: var(--faint); font-weight: 400; font-style: italic; }
+
+  .timeline { max-width: 760px; }
+  .step { display: flex; gap: 16px; }
+  .step-rail { display: flex; flex-direction: column; align-items: center; width: 20px; flex-shrink: 0; }
+  .step-node { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); margin-top: 6px; flex-shrink: 0; }
+  .step-node.done { background: var(--ok); }
+  .step-node.blocked { background: var(--danger); }
+  .step-node.active { background: var(--signal); box-shadow: 0 0 0 3px var(--signal-soft); }
+  .step-line { width: 1px; flex: 1; background: var(--line); min-height: 26px; margin-top: 4px; }
+  .step-body { flex: 1; padding-bottom: 26px; }
+  .step-head { display: flex; align-items: baseline; gap: 10px; }
+  .step-name { font-weight: 600; font-size: 13.5px; }
+  .step-time { font-size: 11px; color: var(--faint); margin-left: auto; }
+  .step-detail { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.55; }
+  .revise-note {
+    margin-top: 10px; padding: 10px 14px; border-radius: 8px;
+    background: var(--warn-soft); border: 1px solid transparent;
+    font-size: 12px; color: var(--ink-soft); line-height: 1.55;
+  }
+  .revise-note b { color: var(--warn); }
+  .qa-panel { margin-top: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-raised); }
+  .qa-scores { display: flex; gap: 28px; margin-bottom: 14px; }
+  .qa-score-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .qa-score-value { font-size: 19px; font-weight: 600; font-family: "IBM Plex Mono", monospace; }
+  .qa-verdict { font-size: 12.5px; color: var(--ink-soft); line-height: 1.6; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+
+  /* ---- library: plain rows, not cards, with a rail per channel ---- */
+  .asset {
+    display: grid; grid-template-columns: 96px 1fr auto; gap: 20px;
+    padding: 20px 0; border-bottom: 1px solid var(--line-soft); align-items: start;
+  }
+  .asset:first-of-type { padding-top: 0; }
+  .asset-channel { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); padding-top: 2px; }
+  .asset-headline { font-size: 14.5px; font-weight: 600; margin-bottom: 5px; letter-spacing: -0.1px; }
+  .asset-body { font-size: 12.5px; color: var(--muted); line-height: 1.6; max-width: 62ch; }
+  .asset-cta { font-size: 12px; color: var(--signal); font-weight: 500; margin-top: 8px; }
+  .asset-meta { text-align: right; font-size: 11px; color: var(--faint); white-space: nowrap; }
+  .asset-meta .chip { margin-bottom: 8px; }
+
+  .footer-note { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--faint); }
+</style>
+
+<div class="meta">
+  <span class="meta-title">Console Concept</span>
+  <span class="meta-sub">A quieter direction for BuildX — for review, not yet built</span>
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-screen="overview" role="tab" aria-selected="true">Mission Control</button>
+    <button class="tab" data-screen="launch" role="tab" aria-selected="false">Launch</button>
+    <button class="tab" data-screen="library" role="tab" aria-selected="false">Content Library</button>
+  </div>
+</div>
+
+<div class="frame">
+
+  <!-- ============================== OVERVIEW ============================== -->
+  <div class="screen active" id="screen-overview">
+    <nav class="rail">
+      <div class="rail-brand">
+        <div class="rail-mark">BX</div>
+        <div class="rail-name">BuildX</div>
+      </div>
+      <div class="rail-group">Operate</div>
+      <div class="rail-item current"><span class="rail-dot"></span>Mission Control</div>
+      <div class="rail-item"><span class="rail-dot"></span>Launch run</div>
+      <div class="rail-item"><span class="rail-dot"></span>Runs</div>
+      <div class="rail-group">Output</div>
+      <div class="rail-item"><span class="rail-dot"></span>Content library</div>
+      <div class="rail-item"><span class="rail-dot"></span>Decision log</div>
+      <div class="rail-group">Configure</div>
+      <div class="rail-item"><span class="rail-dot"></span>Brands</div>
+      <div class="rail-item"><span class="rail-dot"></span>Settings</div>
+    </nav>
+    <main class="main">
+      <div class="topbar">
+        <h1>Mission Control</h1>
+        <div class="status-line"><span class="status-dot"></span>Autonomous — no review queue</div>
+        <div class="spacer"></div>
+        <div class="tenant"><span class="tenant-mark">VR</span>Vertex Robotics</div>
+      </div>
+      <div class="content">
+        <h2 class="section first">This period · September 2026</h2>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-label">Campaign runs</div>
+            <div class="stat-value mono">1</div>
+            <div class="stat-hint">1 published · 0 failed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Assets published</div>
+            <div class="stat-value mono">3</div>
+            <div class="stat-hint">Live in the content library</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Brand safety · alignment</div>
+            <div class="stat-value mono small">93 <span style="color:var(--faint); font-weight:400;">/</span> 88</div>
+            <div class="stat-hint">QA's own scores, unfiltered</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Revisions to clear QA</div>
+            <div class="stat-value mono">1</div>
+            <div class="stat-hint">Caught, fixed, no human involved</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <h2 class="section">Recent runs</h2>
+            <table>
+              <thead><tr><th>Goal</th><th>Origin</th><th>Status</th><th>Align</th><th>When</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="goal-cell">Convert existing evaluators into booked demos by leading with the 40% figure</td>
+                  <td><span class="chip muted">self</span></td>
+                  <td><span class="chip ok"><span class="chip-dot"></span>published</span></td>
+                  <td class="mono">88</td>
+                  <td class="mono" style="color:var(--faint)">11m ago</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h2 class="section">Isolation</h2>
+            <div class="kv">
+              <div class="kv-row"><span class="kv-key">Tenant</span><span class="kv-val">Vertex Robotics</span></div>
+              <div class="kv-row"><span class="kv-key">Tenant ID</span><span class="kv-val mono" style="font-size:11.5px; color:var(--muted)">16ddb492…8ae3b</span></div>
+              <div class="kv-row"><span class="kv-key">API key</span><span class="kv-val mono" style="font-size:11.5px; color:var(--muted)">bx_live_792FCE…</span></div>
+              <div class="kv-row"><span class="kv-key">Autonomy</span><span class="kv-val"><span class="chip ok"><span class="chip-dot"></span>autonomous</span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-note">Every query this key makes is filtered by tenant at the data layer — another tenant's brands, runs, and assets are unreachable with it, not just hidden by the UI.</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================== LAUNCH ============================== -->
+  <div class="screen" id="screen-launch">
+    <nav class="rail">
+      <div class="rail-brand">
+        <div class="rail-mark">BX</div>
+        <div class="rail-name">BuildX</div>
+      </div>
+      <div class="rail-group">Operate</div>
+      <div class="rail-item"><span class="rail-dot"></span>Mission Control</div>
+      <div class="rail-item current"><span class="rail-dot"></span>Launch run</div>
+      <div class="rail-item"><span class="rail-dot"></span>Runs</div>
+      <div class="rail-group">Output</div>
+      <div class="rail-item"><span class="rail-dot"></span>Content library</div>
+      <div class="rail-item"><span class="rail-dot"></span>Decision log</div>
+      <div class="rail-group">Configure</div>
+      <div class="rail-item"><span class="rail-dot"></span>Brands</div>
+      <div class="rail-item"><span class="rail-dot"></span>Settings</div>
+    </nav>
+    <main class="main">
+      <div class="topbar">
+        <h1>Launch run</h1>
+        <div class="status-line"><span class="status-dot" style="background:var(--signal)"></span>Published in 77ms</div>
+        <div class="spacer"></div>
+        <div class="tenant"><span class="tenant-mark">VR</span>Vertex Robotics</div>
+      </div>
+      <div class="content">
+        <div class="brief">
+          <div class="brief-field">
+            <div class="brief-label">Goal</div>
+            <div class="brief-value muted">Not supplied — chosen by the Campaign Director</div>
+          </div>
+          <div class="brief-field">
+            <div class="brief-label">Budget</div>
+            <div class="brief-value mono">$8,000</div>
+          </div>
+          <div class="brief-field">
+            <div class="brief-label">Revision budget</div>
+            <div class="brief-value mono">2 cycles</div>
+          </div>
+        </div>
+
+        <h2 class="section">Agent trace — 8 steps</h2>
+        <div class="timeline">
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node done"></div><div class="step-line"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">Campaign Director</span><span class="step-time mono">19ms</span></div>
+              <div class="step-detail">Chose its own goal · 3 channels · 3 success criteria</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node done"></div><div class="step-line"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">Research Agent</span><span class="step-time mono">22ms</span></div>
+              <div class="step-detail">4 insights · 2 competitors · market $12,400M at 11.8% CAGR</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node done"></div><div class="step-line"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">Strategy Agent</span><span class="step-time mono">28ms</span></div>
+              <div class="step-detail">2 objectives · 3 tactics across linkedin, email, blog</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node blocked"></div><div class="step-line"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">QA Reviewer</span><span class="step-time mono">46ms</span></div>
+              <div class="step-detail">Blocked — 1 critical, 1 advisory</div>
+              <div class="revise-note"><b>Revision cycle 1.</b> The performance figure needed the required attribution disclaimer. Sent back to the content agent — no human involved.</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node done"></div><div class="step-line"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">Content Agent</span><span class="step-time mono">59ms</span></div>
+              <div class="step-detail">3 assets revised — attribution disclaimer added to each</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-rail"><div class="step-node done"></div></div>
+            <div class="step-body">
+              <div class="step-head"><span class="step-name">QA Reviewer</span><span class="step-time mono">65ms</span></div>
+              <div class="qa-panel">
+                <div class="qa-scores">
+                  <div>
+                    <div class="qa-score-label">Brand safety</div>
+                    <div class="qa-score-value" style="color:var(--ok)">93</div>
+                  </div>
+                  <div>
+                    <div class="qa-score-label">Goal alignment</div>
+                    <div class="qa-score-value" style="color:var(--ok)">88</div>
+                  </div>
+                </div>
+                <div class="qa-verdict">The required attribution now appears on every asset carrying the performance figure, which clears the blocking issue. Copy is channel-native and each asset states a specific next step.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================== LIBRARY ============================== -->
+  <div class="screen" id="screen-library">
+    <nav class="rail">
+      <div class="rail-brand">
+        <div class="rail-mark">BX</div>
+        <div class="rail-name">BuildX</div>
+      </div>
+      <div class="rail-group">Operate</div>
+      <div class="rail-item"><span class="rail-dot"></span>Mission Control</div>
+      <div class="rail-item"><span class="rail-dot"></span>Launch run</div>
+      <div class="rail-item"><span class="rail-dot"></span>Runs</div>
+      <div class="rail-group">Output</div>
+      <div class="rail-item current"><span class="rail-dot"></span>Content library</div>
+      <div class="rail-item"><span class="rail-dot"></span>Decision log</div>
+      <div class="rail-group">Configure</div>
+      <div class="rail-item"><span class="rail-dot"></span>Brands</div>
+      <div class="rail-item"><span class="rail-dot"></span>Settings</div>
+    </nav>
+    <main class="main">
+      <div class="topbar">
+        <h1>Content library</h1>
+        <div class="status-line"><span class="status-dot"></span>3 assets — 0 pending review</div>
+        <div class="spacer"></div>
+        <div class="tenant"><span class="tenant-mark">VR</span>Vertex Robotics</div>
+      </div>
+      <div class="content">
+        <h2 class="section first">Vertex Robotics</h2>
+
+        <div class="asset">
+          <div class="asset-channel">LinkedIn</div>
+          <div>
+            <div class="asset-headline">Cuts warehouse pick times by 40% without re-racking the floor</div>
+            <div class="asset-body">Most operations teams do not lose the evaluation on features. They lose it at the internal justification step, because nobody can defend the vendor's number. So here is ours, with the baseline and the measurement window attached.</div>
+            <div class="asset-cta">→ Get the one-page proof before you book anything</div>
+          </div>
+          <div class="asset-meta">
+            <div class="chip ok"><span class="chip-dot"></span>published</div>
+            <div class="mono">4s ago</div>
+          </div>
+        </div>
+
+        <div class="asset">
+          <div class="asset-channel">Blog</div>
+          <div>
+            <div class="asset-headline">How we measure the number we lead with</div>
+            <div class="asset-body">Vendors quote improvement figures without saying what was measured, over what period, against what baseline. This is the full methodology — the baseline, the measurement window, and the two conditions under which the figure does not hold.</div>
+            <div class="asset-cta">→ See the full methodology and where it does not apply</div>
+          </div>
+          <div class="asset-meta">
+            <div class="chip ok"><span class="chip-dot"></span>published</div>
+            <div class="mono">4s ago</div>
+          </div>
+        </div>
+
+        <div class="asset">
+          <div class="asset-channel">Email</div>
+          <div>
+            <div class="asset-headline">The number your CFO will ask for</div>
+            <div class="asset-body">You already know what Vertex Robotics does. What you probably need is the figure you can put in a business case, with the breakdown of how it is measured linked below. No demo required to read it.</div>
+            <div class="asset-cta">→ Read the deployment breakdown, then book time if the math holds</div>
+          </div>
+          <div class="asset-meta">
+            <div class="chip ok"><span class="chip-dot"></span>published</div>
+            <div class="mono">4s ago</div>
+          </div>
+        </div>
+
+        <div class="footer-note">Assets land here the moment QA passes them. Nothing waits in a review queue unless the tenant's policy explicitly asks for that.</div>
+      </div>
+    </main>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
+      document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('active'); });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      document.getElementById('screen-' + tab.dataset.screen).classList.add('active');
+    });
+  });
+</script>
