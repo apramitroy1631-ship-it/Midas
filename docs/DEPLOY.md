@@ -33,17 +33,20 @@ pointed at the other afterward with no rebuild.
 
 1. Sign up at [railway.app](https://railway.app) with GitHub, same reasoning
    as above.
-2. **New Project → Deploy from GitHub repo**, select this repo.
-3. In the service's settings, set **Root Directory to `backend`**. Railway
-   will detect `Dockerfile` there and use it automatically — see
-   [`../backend/Dockerfile`](../backend/Dockerfile) and
-   [`../backend/railway.json`](../backend/railway.json) (build config +
-   `/health` healthcheck, already committed).
-4. **Add a database**: in the project, **New → Database → Add MongoDB**.
+2. **New Project → Deploy from GitHub repo**, select this repo. **No "Root
+   Directory" setting needed** — the repo ships a `Dockerfile` and
+   `railway.json` at the repo root specifically so Railway finds them
+   without depending on that per-service field (which proved unreliable to
+   configure through the dashboard: repeated deploys kept ignoring it and
+   analyzing the whole repo root via Railpack instead of the intended
+   folder). The root `Dockerfile` copies only from `backend/` — see its
+   comments, and [`../backend/Dockerfile`](../backend/Dockerfile) for the
+   equivalent used for local development.
+3. **Add a database**: in the project, **New → Database → Add MongoDB**.
    Railway provisions a Mongo instance and exposes its connection string as
    a variable on that service (commonly `MONGO_URL` — check the Mongo
    service's Variables tab for the exact name it generated).
-5. On the **backend service's** Variables tab, set:
+4. On the **backend service's** Variables tab, set:
 
    | Variable | Value |
    |---|---|
@@ -57,9 +60,9 @@ pointed at the other afterward with no rebuild.
 
    Everything else in [`backend/.env.example`](../backend/.env.example) has a
    working default and only needs setting if you want to change it.
-6. Deploy. Railway assigns a public URL under **Settings → Networking →
+5. Deploy. Railway assigns a public URL under **Settings → Networking →
    Generate Domain** if one isn't already there.
-7. **Seed two tenants** against the deployed backend so there's something to
+6. **Seed a tenant** against the deployed backend so there's something to
    connect to:
 
    ```bash
@@ -85,4 +88,4 @@ curl https://<your-railway-domain>/health
 
 `{"status":"ok","database":"up",...}` means Mongo connected. `"degraded"`
 with `"database":"down"` means the `MONGODB_URI` variable isn't wired up
-correctly yet — check the Mongo service's actual variable name in step 4.
+correctly yet — check the Mongo service's actual variable name in step 3.

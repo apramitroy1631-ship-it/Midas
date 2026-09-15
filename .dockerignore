@@ -1,0 +1,13 @@
+# This root Dockerfile only needs backend/ — everything else here would
+# just bloat the upload to Railway's builder for no reason.
+.git/
+.claude/
+docs/
+sandbox/
+web/
+
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.env
