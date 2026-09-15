@@ -1,4 +1,4 @@
-# Deploying BuildX
+# Deploying MIDAS
 
 Two separate deployments, because the frontend and backend have genuinely
 different hosting needs — see [ARCHITECTURE.md](ARCHITECTURE.md) for why the

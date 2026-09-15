@@ -32,7 +32,7 @@ services:
       - "8100:8000"
     environment:
       PORT: "8000"
-      ADMIN_API_KEY: "buildx-admin-local-dev"
+      ADMIN_API_KEY: "midas-admin-local-dev"
       LLM_PROVIDER: "simulator"
       MONGODB_URI: "mongodb://mongo:27017"
       MONGODB_DB_NAME: "buildx"

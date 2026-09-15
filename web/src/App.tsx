@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge, initials } from "./components/ui";
+import { Badge } from "./components/ui";
 import { api } from "./lib/api";
 import { store } from "./lib/store";
 import type {
@@ -23,34 +23,35 @@ import { Settings } from "./views/Settings";
 
 type View = "overview" | "launch" | "runs" | "library" | "brands" | "audit" | "settings";
 
-const NAV: { id: View; label: string; icon: string; group: string }[] = [
-  { id: "overview", label: "Mission control", icon: "◎", group: "Operate" },
-  { id: "launch", label: "Launch run", icon: "▶", group: "Operate" },
-  { id: "runs", label: "Runs", icon: "◆", group: "Operate" },
-  { id: "library", label: "Content library", icon: "▤", group: "Output" },
-  { id: "audit", label: "Decision log", icon: "≡", group: "Output" },
-  { id: "brands", label: "Brands", icon: "◇", group: "Configure" },
-  { id: "settings", label: "Settings", icon: "⚙", group: "Configure" },
+// Labels are written for someone opening this for the first time, not for
+// whoever built it — "Dashboard" over "Mission Control", "New Campaign"
+// over "Launch run", etc. Each pairs with a one-line sub-label in the nav
+// so the section header alone doesn't have to carry all the meaning.
+const NAV: { id: View; label: string; sub: string; icon: string; group: string }[] = [
+  { id: "overview", label: "Dashboard", sub: "How things are going", icon: "◎", group: "Operate" },
+  { id: "launch", label: "New Campaign", sub: "Start an autonomous run", icon: "▶", group: "Operate" },
+  { id: "runs", label: "Campaign History", sub: "Every run, replayable", icon: "◆", group: "Operate" },
+  { id: "library", label: "Content Library", sub: "Everything published", icon: "▤", group: "Output" },
+  { id: "audit", label: "Decision Log", sub: "Why each run did what it did", icon: "≡", group: "Output" },
+  { id: "brands", label: "Brands", sub: "Voice, USP, hard rules", icon: "◇", group: "Configure" },
+  { id: "settings", label: "Settings", sub: "Autonomy & guardrails", icon: "⚙", group: "Configure" },
 ];
 
 const TITLES: Record<View, string> = {
-  overview: "Mission control",
-  launch: "Launch an autonomous run",
-  runs: "Runs",
-  library: "Content library",
+  overview: "Dashboard",
+  launch: "New Campaign",
+  runs: "Campaign History",
+  library: "Content Library",
   brands: "Brands",
-  audit: "Decision log",
+  audit: "Decision Log",
   settings: "Settings",
 };
 
 export default function App() {
   const [conn, setConn] = useState<Connection | null>(() => store.active());
-  const [connections, setConnections] = useState<Connection[]>(() => store.connections());
-  const [adding, setAdding] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">(() => store.theme());
 
   const [view, setView] = useState<View>("overview");
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [openRunId, setOpenRunId] = useState<string | null>(null);
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
@@ -102,45 +103,21 @@ export default function App() {
     void refresh();
   }, [refresh]);
 
-  // Close the tenant switcher on any outside click.
-  useEffect(() => {
-    if (!switcherOpen) return;
-    const close = () => setSwitcherOpen(false);
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [switcherOpen]);
-
-  function selectConnection(c: Connection) {
-    store.setActive(c.id);
-    setConn(c);
-    setTenant(null);
-    setBrands([]);
-    setRuns([]);
-    setAssets([]);
-    setAudit([]);
-    setStats(null);
-    setOpenRunId(null);
-    setView("overview");
-  }
-
   function disconnect() {
     if (!conn) return;
     store.remove(conn.id);
-    const remaining = store.connections();
-    setConnections(remaining);
-    setConn(remaining[0] ?? null);
+    setConn(store.connections()[0] ?? null);
     setTenant(null);
   }
 
-  if (!conn || adding) {
+  if (!conn) {
     return (
       <Connect
         onConnected={(c) => {
-          setConnections(store.connections());
-          setAdding(false);
-          selectConnection(c);
+          store.setActive(c.id);
+          setConn(c);
+          setView("overview");
         }}
-        onCancel={adding && conn ? () => setAdding(false) : undefined}
       />
     );
   }
@@ -161,10 +138,10 @@ export default function App() {
     <div className="app">
       <nav className="sidebar">
         <div className="logo">
-          <div className="logo-mark">BX</div>
+          <div className="logo-mark">M</div>
           <div>
-            <div className="logo-text">BuildX</div>
-            <div className="logo-sub">AUTONOMOUS</div>
+            <div className="logo-text">MIDAS</div>
+            <div className="logo-sub">MARKETING AUTOMATION</div>
           </div>
         </div>
 
@@ -175,13 +152,17 @@ export default function App() {
               <button
                 key={item.id}
                 className={"nav-item" + (view === item.id ? " active" : "")}
+                title={item.sub}
                 onClick={() => {
                   setView(item.id);
                   setOpenRunId(null);
                 }}
               >
                 <span className="nav-icon">{item.icon}</span>
-                {item.label}
+                <span className="nav-item-text">
+                  <span className="nav-item-label">{item.label}</span>
+                  <span className="nav-item-sub">{item.sub}</span>
+                </span>
                 {counts[item.id] !== undefined && counts[item.id]! > 0 && (
                   <span className="nav-count">{counts[item.id]}</span>
                 )}
@@ -194,13 +175,17 @@ export default function App() {
 
         <button className="nav-item" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
           <span className="nav-icon">{theme === "dark" ? "☾" : "☀"}</span>
-          {theme === "dark" ? "Dark" : "Light"}
+          <span className="nav-item-text">
+            <span className="nav-item-label">{theme === "dark" ? "Dark" : "Light"}</span>
+          </span>
         </button>
       </nav>
 
       <div className="main">
         <header className="topbar">
-          <h1>{TITLES[view]}</h1>
+          <div>
+            <h1>{TITLES[view]}</h1>
+          </div>
           {tenant?.policy.autonomy === "autonomous" && (
             <Badge tone="ok" dot>no human in the loop</Badge>
           )}
@@ -208,57 +193,11 @@ export default function App() {
 
           <button className="btn ghost sm" onClick={() => void refresh()}>Refresh</button>
 
-          <div
-            className="tenant-switch"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSwitcherOpen((v) => !v);
-            }}
-          >
-            <span className="tenant-avatar" style={{ background: conn.color }}>
-              {initials(tenant?.name ?? conn.label)}
-            </span>
-            <div style={{ lineHeight: 1.25 }}>
-              <div className="tenant-name">{tenant?.name ?? conn.label}</div>
-              <div className="tenant-meta">{tenant?.slug ?? "connecting…"}</div>
-            </div>
-            <span className="dim" style={{ fontSize: 10 }}>▾</span>
+          {/* Single-tenant deployment: this is a plain label, not a switcher —
+              MIDAS is run for one company. See docs/design/DESIGN_BRIEF.md. */}
+          <div className="tenant-badge">
+            <span className="tenant-name">{tenant?.name ?? "Loading…"}</span>
           </div>
-
-          {switcherOpen && (
-            <div className="dropdown" onClick={(e) => e.stopPropagation()}>
-              {connections.map((c) => (
-                <button
-                  key={c.id}
-                  className="dropdown-item"
-                  onClick={() => {
-                    selectConnection(c);
-                    setSwitcherOpen(false);
-                  }}
-                >
-                  <span className="tenant-avatar" style={{ background: c.color }}>
-                    {initials(c.label)}
-                  </span>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div className="tenant-name">{c.label}</div>
-                    <div className="tenant-meta truncate">{c.baseUrl}</div>
-                  </div>
-                  {c.id === conn.id && <span style={{ color: "var(--accent)" }}>✓</span>}
-                </button>
-              ))}
-              <div className="dropdown-sep" />
-              <button
-                className="dropdown-item"
-                onClick={() => {
-                  setAdding(true);
-                  setSwitcherOpen(false);
-                }}
-              >
-                <span className="nav-icon">＋</span>
-                Connect another tenant
-              </button>
-            </div>
-          )}
         </header>
 
         <main className="content">
@@ -271,7 +210,7 @@ export default function App() {
             </div>
           )}
 
-          {!tenant && !loadError && <div className="dim">Loading tenant…</div>}
+          {!tenant && !loadError && <div className="dim">Loading…</div>}
 
           {tenant && view === "overview" && (
             <Overview

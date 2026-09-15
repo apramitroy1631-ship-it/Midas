@@ -54,16 +54,16 @@ export function Connect({
     <div className="setup">
       <div className="setup-card">
         <div className="logo" style={{ padding: "0 0 20px" }}>
-          <div className="logo-mark">BX</div>
+          <div className="logo-mark">M</div>
           <div>
-            <div className="logo-text">BuildX Console</div>
-            <div className="logo-sub">AUTONOMOUS MARKETING</div>
+            <div className="logo-text">MIDAS</div>
+            <div className="logo-sub">MARKETING AUTOMATION</div>
           </div>
         </div>
 
         <p className="muted" style={{ fontSize: 13, marginTop: 0, lineHeight: 1.65 }}>
-          Connect with a tenant API key. Each key sees only its own tenant's brands, runs, and
-          assets — connect several and switch between them from the top bar.
+          Connect with your API key — shown once when this deployment was set up. Stored
+          only in this browser, never sent anywhere but the API address below.
         </p>
 
         {error && (

@@ -6,11 +6,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_name: str = "BuildX Autonomous Marketing"
+    app_name: str = "MIDAS - Marketing Intelligence & Decision Automation System"
 
     # --- Control plane ---
-    # Master key for tenant provisioning (POST /v1/tenants). Never hand this to a tenant.
-    admin_api_key: str = "buildx-admin-change-me"
+    # Master key for tenant provisioning (POST /v1/admin/tenants). Never hand this to a tenant.
+    admin_api_key: str = "midas-admin-change-me"
 
     # --- LLM providers ---
     openai_api_key: str = ""
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_endpoint: str = "https://api.smith.langchain.com"
     langsmith_api_key: str = ""
-    langsmith_project: str = "BuildX"
+    langsmith_project: str = "MIDAS"
 
 
 settings = Settings()

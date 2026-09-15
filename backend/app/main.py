@@ -54,11 +54,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="BuildX - Autonomous Multi-Tenant Marketing",
+    title="MIDAS - Marketing Intelligence & Decision Automation System",
     version="1.0.0",
     description=(
         "A hierarchical agent system that plans, researches, writes, reviews, and publishes "
-        "marketing content per tenant with no human in the loop. Authenticate with X-API-Key."
+        "marketing content with no human in the loop. Authenticate with X-API-Key. "
+        "Architected multi-tenant (see app/db/scoped.py) though this deployment is operated "
+        "for a single company."
     ),
     lifespan=lifespan,
 )
