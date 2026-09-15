@@ -28,7 +28,15 @@ sandbox/    the pipeline-bench prototypes evaluated before this was built (refer
 
 ## Quickstart
 
-Requires Python 3.11+, Node 20+, and MongoDB reachable at `localhost:27017`.
+**Backend — Docker (simplest):**
+
+```bash
+docker compose up --build -d                    # backend + MongoDB together
+docker compose exec backend python -m scripts.seed   # prints two tenant API keys — save them, shown once
+```
+
+**Backend — without Docker**, if you'd rather: requires Python 3.11+ and
+MongoDB reachable at `localhost:27017`.
 
 ```bash
 cd backend
@@ -37,6 +45,8 @@ cp .env.example .env
 .venv/Scripts/python.exe -m scripts.seed        # prints two tenant API keys — save them, shown once
 .venv/Scripts/python.exe -m uvicorn app.main:app --port 8100
 ```
+
+**Console** (requires Node 20+):
 
 ```bash
 cd web

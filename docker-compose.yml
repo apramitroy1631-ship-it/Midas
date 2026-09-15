@@ -1,0 +1,46 @@
+# Local development stack — backend + MongoDB together.
+#
+# This is NOT what Railway deploys from (Railway builds the root Dockerfile
+# directly, no compose involved) — this is purely for running the whole
+# thing on your own machine with one command instead of juggling a separate
+# mongod process and a venv.
+#
+#   docker compose up --build          # first run / after code changes
+#   docker compose exec backend python -m scripts.seed   # provision a tenant
+#   docker compose down                # stop (add -v to also wipe Mongo data)
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8100:8000"
+    environment:
+      PORT: "8000"
+      ADMIN_API_KEY: "buildx-admin-local-dev"
+      LLM_PROVIDER: "simulator"
+      MONGODB_URI: "mongodb://mongo:27017"
+      MONGODB_DB_NAME: "buildx"
+      AUTOPILOT_ENABLED: "true"
+      AUTOPILOT_SWEEP_SECONDS: "60"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo-data:
