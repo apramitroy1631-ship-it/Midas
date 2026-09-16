@@ -37,21 +37,30 @@ export function Stat({
   value,
   hint,
   tone,
+  icon,
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
   tone?: "ok" | "warn" | "danger" | "accent";
+  icon?: ReactNode;
 }) {
   const color =
     tone === "ok" ? "var(--ok)"
     : tone === "warn" ? "var(--warn)"
     : tone === "danger" ? "var(--danger)"
-    : tone === "accent" ? "var(--accent)"
+    : tone === "accent" ? "var(--info)"
     : "var(--text)";
   return (
     <div className="card stat">
-      <span className="stat-label">{label}</span>
+      <div className="stat-top">
+        <span className="stat-label">{label}</span>
+        {icon && (
+          <span className="stat-icon" style={{ color, background: `color-mix(in srgb, ${color} 16%, transparent)` }}>
+            {icon}
+          </span>
+        )}
+      </div>
       <span className="stat-value" style={{ color }}>{value}</span>
       {hint && <span className="stat-hint">{hint}</span>}
     </div>

@@ -10,6 +10,7 @@ import type { Connection } from "./types";
 const KEY = "buildx.connections";
 const ACTIVE = "buildx.active";
 const THEME = "buildx.theme";
+const SIDEBAR_COLLAPSED = "buildx.sidebarCollapsed";
 
 const PALETTE = ["#6ea8fe", "#b98cff", "#4ade80", "#fbbf24", "#f87171", "#38bdf8"];
 
@@ -66,4 +67,7 @@ export const store = {
 
   theme: (): "dark" | "light" => read<"dark" | "light">(THEME, "dark"),
   setTheme: (t: "dark" | "light") => write(THEME, t),
+
+  sidebarCollapsed: (): boolean => read<boolean>(SIDEBAR_COLLAPSED, false),
+  setSidebarCollapsed: (v: boolean) => write(SIDEBAR_COLLAPSED, v),
 };

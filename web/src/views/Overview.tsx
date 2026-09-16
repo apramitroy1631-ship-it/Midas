@@ -60,22 +60,26 @@ export function Overview({
     <div className="col" style={{ gap: 0 }}>
       <div className="grid grid-4">
         <Stat
+          icon="◆"
           label="Campaign runs"
           value={stats?.total_runs ?? "—"}
           hint={`${stats?.published_runs ?? 0} published · ${stats?.failed_runs ?? 0} failed`}
         />
         <Stat
+          icon="▤"
           label="Assets published"
           value={stats?.total_assets ?? "—"}
           hint="Live in the content library"
           tone="accent"
         />
         <Stat
+          icon="◎"
           label="Self-directed runs"
           value={stats?.self_directed_runs ?? "—"}
           hint="Goal chosen by the system, not a person"
         />
         <Stat
+          icon="↻"
           label="Avg revisions"
           value={stats?.avg_revisions ?? "—"}
           hint="Self-corrections before QA passed"

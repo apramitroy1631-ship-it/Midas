@@ -89,7 +89,7 @@ export function Connect({
     <div className="setup">
       <div className="setup-card">
         <div className="brand-lockup">
-          <img src="/brand/cmart-logo.svg" alt="CMART Solutions" className="brand-logo" />
+          <img src="/brand/cmart-mark.svg" alt="CMART Solutions" className="brand-logo" />
           <div className="brand-lockup-text">
             <div className="brand-name">MIDAS</div>
             <div className="brand-acronym">

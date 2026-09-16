@@ -1,3 +1,17 @@
+import {
+  BookOpenText,
+  Building2,
+  LayoutDashboard,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Rocket,
+  ScrollText,
+  Settings as SettingsIcon,
+  Sun,
+  History as HistoryIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "./components/ui";
 import { api } from "./lib/api";
@@ -27,14 +41,14 @@ type View = "overview" | "launch" | "runs" | "library" | "brands" | "audit" | "s
 // whoever built it — "Dashboard" over "Mission Control", "New Campaign"
 // over "Launch run", etc. Each pairs with a one-line sub-label in the nav
 // so the section header alone doesn't have to carry all the meaning.
-const NAV: { id: View; label: string; sub: string; icon: string; group: string }[] = [
-  { id: "overview", label: "Dashboard", sub: "How things are going", icon: "◎", group: "Operate" },
-  { id: "launch", label: "New Campaign", sub: "Start an autonomous run", icon: "▶", group: "Operate" },
-  { id: "runs", label: "Campaign History", sub: "Every run, replayable", icon: "◆", group: "Operate" },
-  { id: "library", label: "Content Library", sub: "Everything published", icon: "▤", group: "Output" },
-  { id: "audit", label: "Decision Log", sub: "Why each run did what it did", icon: "≡", group: "Output" },
-  { id: "brands", label: "Brands", sub: "Voice, USP, hard rules", icon: "◇", group: "Configure" },
-  { id: "settings", label: "Settings", sub: "Autonomy & guardrails", icon: "⚙", group: "Configure" },
+const NAV: { id: View; label: string; sub: string; icon: LucideIcon; group: string }[] = [
+  { id: "overview", label: "Dashboard", sub: "How things are going", icon: LayoutDashboard, group: "Operate" },
+  { id: "launch", label: "New Campaign", sub: "Start an autonomous run", icon: Rocket, group: "Operate" },
+  { id: "runs", label: "Campaign History", sub: "Every run, replayable", icon: HistoryIcon, group: "Operate" },
+  { id: "library", label: "Content Library", sub: "Everything published", icon: BookOpenText, group: "Output" },
+  { id: "audit", label: "Decision Log", sub: "Why each run did what it did", icon: ScrollText, group: "Output" },
+  { id: "brands", label: "Brands", sub: "Voice, USP, hard rules", icon: Building2, group: "Configure" },
+  { id: "settings", label: "Settings", sub: "Autonomy & guardrails", icon: SettingsIcon, group: "Configure" },
 ];
 
 const TITLES: Record<View, string> = {
@@ -50,6 +64,7 @@ const TITLES: Record<View, string> = {
 export default function App() {
   const [conn, setConn] = useState<Connection | null>(() => store.active());
   const [theme, setTheme] = useState<"dark" | "light">(() => store.theme());
+  const [collapsed, setCollapsed] = useState<boolean>(() => store.sidebarCollapsed());
 
   const [view, setView] = useState<View>("overview");
   const [openRunId, setOpenRunId] = useState<string | null>(null);
@@ -67,6 +82,13 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     store.setTheme(theme);
   }, [theme]);
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      store.setSidebarCollapsed(!c);
+      return !c;
+    });
+  }
 
   const refresh = useCallback(async () => {
     if (!conn) return;
@@ -135,35 +157,39 @@ export default function App() {
   };
 
   return (
-    <div className="app">
+    <div className={"app" + (collapsed ? " sidebar-collapsed" : "")}>
       <nav className="sidebar">
         <div className="logo">
-          <img src="/brand/cmart-logo.svg" alt="CMART Solutions" className="logo-mark-img" />
-          <div>
-            <div className="logo-text" title="Marketing Intelligence &amp; Decision Automation System">MIDAS</div>
-            <div className="logo-sub">by CMART</div>
-          </div>
+          <img src="/brand/cmart-mark.svg" alt="CMART Solutions" className="logo-mark-img" />
+          {!collapsed && (
+            <div>
+              <div className="logo-text" title="Marketing Intelligence &amp; Decision Automation System">MIDAS</div>
+              <div className="logo-sub">by CMART</div>
+            </div>
+          )}
         </div>
 
         {Object.entries(grouped).map(([group, items]) => (
           <div key={group}>
-            <div className="nav-label">{group}</div>
+            {!collapsed && <div className="nav-label">{group}</div>}
             {items.map((item) => (
               <button
                 key={item.id}
                 className={"nav-item" + (view === item.id ? " active" : "")}
-                title={item.sub}
+                title={collapsed ? item.label : item.sub}
                 onClick={() => {
                   setView(item.id);
                   setOpenRunId(null);
                 }}
               >
-                <span className="nav-icon">{item.icon}</span>
-                <span className="nav-item-text">
-                  <span className="nav-item-label">{item.label}</span>
-                  <span className="nav-item-sub">{item.sub}</span>
-                </span>
-                {counts[item.id] !== undefined && counts[item.id]! > 0 && (
+                <span className="nav-icon"><item.icon size={15} strokeWidth={2} /></span>
+                {!collapsed && (
+                  <span className="nav-item-text">
+                    <span className="nav-item-label">{item.label}</span>
+                    <span className="nav-item-sub">{item.sub}</span>
+                  </span>
+                )}
+                {!collapsed && counts[item.id] !== undefined && counts[item.id]! > 0 && (
                   <span className="nav-count">{counts[item.id]}</span>
                 )}
               </button>
@@ -173,11 +199,15 @@ export default function App() {
 
         <div className="spacer" />
 
-        <button className="nav-item" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-          <span className="nav-icon">{theme === "dark" ? "☾" : "☀"}</span>
-          <span className="nav-item-text">
-            <span className="nav-item-label">{theme === "dark" ? "Dark" : "Light"}</span>
+        <button
+          className="nav-item"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onClick={toggleCollapsed}
+        >
+          <span className="nav-icon">
+            {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
           </span>
+          {!collapsed && <span className="nav-item-text"><span className="nav-item-label">Collapse</span></span>}
         </button>
       </nav>
 
@@ -198,6 +228,14 @@ export default function App() {
           <div className="tenant-badge">
             <span className="tenant-name">{tenant?.name ?? "Loading…"}</span>
           </div>
+
+          <button
+            className="theme-toggle"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Moon size={15} strokeWidth={2} /> : <Sun size={15} strokeWidth={2} />}
+          </button>
         </header>
 
         <main className="content">
@@ -212,6 +250,7 @@ export default function App() {
 
           {!tenant && !loadError && <div className="dim">Loading…</div>}
 
+          <div key={view} className="view-enter">
           {tenant && view === "overview" && (
             <Overview
               conn={conn}
@@ -260,6 +299,7 @@ export default function App() {
               onDisconnect={disconnect}
             />
           )}
+          </div>
         </main>
       </div>
     </div>
