@@ -53,9 +53,9 @@ pointed at the other afterward with no rebuild.
    | `ADMIN_API_KEY` | a long random string you generate — this is the master key for provisioning tenants, keep it secret |
    | `MONGODB_URI` | reference the Mongo service's connection string (Railway lets you pick another service's variable directly in this UI — search for the Mongo service and select its URL variable rather than retyping it) |
    | `MONGODB_DB_NAME` | `buildx` |
-   | `LLM_PROVIDER` | `simulator` to start (no key needed, exercises the full pipeline — see [ARCHITECTURE.md § LLM provider](ARCHITECTURE.md#llm-provider)), or `openai`/`anthropic` with a funded key for real inference |
-   | `OPENAI_API_KEY` | only if `LLM_PROVIDER=openai` |
-   | `ANTHROPIC_API_KEY` | only if `LLM_PROVIDER=anthropic` |
+   | `LLM_PROVIDER` | `simulator` to start (no key needed, exercises the full pipeline — see [ARCHITECTURE.md § LLM provider](ARCHITECTURE.md#llm-provider)); any other value (e.g. `gemini`) switches every agent to whatever `AGENT_MODEL_MAP` (`backend/app/core/config.py`) routes it to, currently Gemini |
+   | `GEMINI_API_KEY` | a free-tier key from [aistudio.google.com](https://aistudio.google.com) — needed once `LLM_PROVIDER` is not `simulator`, since every agent is routed to Gemini |
+   | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | only needed if you edit `AGENT_MODEL_MAP` back to one of those providers |
    | `AUTOPILOT_ENABLED` | `true` |
 
    Everything else in [`backend/.env.example`](../backend/.env.example) has a

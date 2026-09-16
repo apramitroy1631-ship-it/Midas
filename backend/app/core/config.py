@@ -7,11 +7,11 @@ A tenant can override any of this via `tenant.model_overrides`.
 """
 
 AGENT_MODEL_MAP = {
-    "orchestrator": {"provider": "openai", "model": "gpt-4o"},
-    "research":     {"provider": "openai", "model": "gpt-4o-mini"},
-    "strategy":     {"provider": "openai", "model": "gpt-4o-mini"},
-    "content":      {"provider": "openai", "model": "gpt-4o-mini"},
-    "seo":          {"provider": "openai", "model": "gpt-4o-mini"},
-    "qa":           {"provider": "openai", "model": "gpt-4o"},
-    "analytics":    {"provider": "openai", "model": "gpt-4o-mini"},
+    "orchestrator": {"provider": "gemini", "model": "gemini-1.5-pro"},
+    "research":     {"provider": "gemini", "model": "gemini-1.5-flash"},
+    "strategy":     {"provider": "gemini", "model": "gemini-1.5-flash"},
+    "content":      {"provider": "gemini", "model": "gemini-1.5-flash"},
+    "seo":          {"provider": "gemini", "model": "gemini-1.5-flash"},
+    "qa":           {"provider": "gemini", "model": "gemini-1.5-pro"},
+    "analytics":    {"provider": "gemini", "model": "gemini-1.5-flash"},
 }
