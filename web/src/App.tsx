@@ -138,10 +138,10 @@ export default function App() {
     <div className="app">
       <nav className="sidebar">
         <div className="logo">
-          <div className="logo-mark">M</div>
+          <img src="/brand/cmart-logo.svg" alt="CMART Solutions" className="logo-mark-img" />
           <div>
-            <div className="logo-text">MIDAS</div>
-            <div className="logo-sub">MARKETING AUTOMATION</div>
+            <div className="logo-text" title="Marketing Intelligence &amp; Decision Automation System">MIDAS</div>
+            <div className="logo-sub">by CMART</div>
           </div>
         </div>
 

@@ -1,68 +1,74 @@
 /* ---------------------------------------------------------------------------
    MIDAS Console — design tokens
+   Palette and type lifted from cmartsolutions.com (Bricolage Grotesque for
+   display type, Inter for body, crimson + gold as the two accents) so the
+   console reads as the same company as the site, not a separate product.
    Dark-first, because this is a monitoring surface people leave open.
    Light theme is a full token swap, not an inversion hack.
 --------------------------------------------------------------------------- */
 
 :root {
+  --display: "Bricolage Grotesque", "Inter", ui-sans-serif, system-ui, sans-serif;
   --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
 
-  --bg: #0a0b0e;
-  --surface: #101218;
-  --surface-2: #161922;
-  --surface-3: #1d212c;
-  --border: #23283a;
-  --border-soft: #1a1e2a;
+  --bg: #050505;
+  --surface: #0d0d0d;
+  --surface-2: #141414;
+  --surface-3: #1c1c1c;
+  --border: #272727;
+  --border-soft: #191919;
 
-  --text: #e8eaf0;
-  --text-muted: #9aa3b8;
-  --text-dim: #626c85;
+  --text: #f5f5f5;
+  --text-muted: #a3a3a3;
+  --text-dim: #6b6b6b;
 
-  --accent: #6ea8fe;
-  --accent-dim: rgba(110, 168, 254, 0.14);
-  --accent-2: #b98cff;
+  --accent: #c8283c;
+  --accent-dim: rgba(200, 40, 60, 0.15);
+  --accent-2: #bf953f;
+  --accent-2-dim: rgba(191, 149, 63, 0.15);
 
-  --ok: #4ade80;
-  --ok-dim: rgba(74, 222, 128, 0.13);
-  --warn: #fbbf24;
-  --warn-dim: rgba(251, 191, 36, 0.13);
-  --danger: #f87171;
-  --danger-dim: rgba(248, 113, 113, 0.13);
-  --running: #38bdf8;
+  --ok: #3fb27f;
+  --ok-dim: rgba(63, 178, 127, 0.14);
+  --warn: #bf953f;
+  --warn-dim: rgba(191, 149, 63, 0.15);
+  --danger: #d94b50;
+  --danger-dim: rgba(217, 75, 80, 0.14);
+  --running: #3c82c8;
 
   --radius: 10px;
   --radius-sm: 6px;
-  --shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+  --shadow: 0 10px 34px rgba(0, 0, 0, 0.55);
 
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: #f6f7f9;
+  --bg: #faf8f5;
   --surface: #ffffff;
-  --surface-2: #f2f4f7;
-  --surface-3: #e8ebf0;
-  --border: #dde1e8;
-  --border-soft: #e8ebf0;
+  --surface-2: #f5f1ea;
+  --surface-3: #ece5da;
+  --border: #e2d9c9;
+  --border-soft: #ece5da;
 
-  --text: #171a21;
-  --text-muted: #5b6478;
-  --text-dim: #8d95a8;
+  --text: #201c17;
+  --text-muted: #6b6155;
+  --text-dim: #948a7c;
 
-  --accent: #2563eb;
-  --accent-dim: rgba(37, 99, 235, 0.1);
-  --accent-2: #7c3aed;
+  --accent: #c8283c;
+  --accent-dim: rgba(200, 40, 60, 0.09);
+  --accent-2: #96741f;
+  --accent-2-dim: rgba(150, 116, 31, 0.1);
 
-  --ok: #16a34a;
-  --ok-dim: rgba(22, 163, 74, 0.1);
-  --warn: #b45309;
-  --warn-dim: rgba(180, 83, 9, 0.1);
-  --danger: #dc2626;
-  --danger-dim: rgba(220, 38, 38, 0.1);
-  --running: #0284c7;
+  --ok: #227a56;
+  --ok-dim: rgba(34, 122, 86, 0.1);
+  --warn: #8a6a1f;
+  --warn-dim: rgba(138, 106, 31, 0.1);
+  --danger: #b3272c;
+  --danger-dim: rgba(179, 39, 44, 0.1);
+  --running: #205f96;
 
-  --shadow: 0 8px 24px rgba(15, 23, 42, 0.09);
+  --shadow: 0 8px 24px rgba(40, 28, 12, 0.08);
   color-scheme: light;
 }
 
@@ -109,16 +115,22 @@ a { color: var(--accent); text-decoration: none; }
   gap: 10px;
   padding: 4px 10px 18px;
 }
-.logo-mark {
-  width: 26px; height: 26px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  display: grid; place-items: center;
-  font-weight: 700; font-size: 13px; color: #fff;
+.logo-mark-img {
+  width: 30px; height: 30px;
   flex-shrink: 0;
+  border-radius: 6px;
+  background: #070707;
+  padding: 4px;
+  object-fit: contain;
 }
-.logo-text { font-weight: 640; letter-spacing: -0.2px; font-size: 15px; }
-.logo-sub { font-size: 10.5px; color: var(--text-dim); font-family: var(--mono); letter-spacing: 0.4px; }
+.logo-text {
+  font-family: var(--display); font-weight: 700; letter-spacing: -0.1px;
+  font-size: 16px; cursor: default;
+}
+.logo-sub {
+  font-size: 10.5px; color: var(--accent-2); font-weight: 600;
+  letter-spacing: 0.4px; text-transform: uppercase;
+}
 
 .nav-label {
   font-size: 10px; text-transform: uppercase; letter-spacing: 0.9px;
@@ -157,7 +169,7 @@ a { color: var(--accent); text-decoration: none; }
   padding: 0 22px;
   background: var(--surface);
 }
-.topbar h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.2px; }
+.topbar h1 { font-family: var(--display); font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.2px; }
 .topbar-spacer { flex: 1; }
 
 .content { flex: 1; overflow-y: auto; padding: 22px; }
@@ -458,9 +470,41 @@ a { color: var(--accent); text-decoration: none; }
 
 .setup {
   min-height: 100%; display: grid; place-items: center; padding: 40px 20px;
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, var(--accent-dim), transparent),
+    var(--bg);
 }
 .setup-card {
-  width: min(520px, 100%);
+  width: min(460px, 100%);
   background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: 14px; padding: 30px; box-shadow: var(--shadow);
+  border-radius: 16px; padding: 34px; box-shadow: var(--shadow);
 }
+
+.brand-lockup { display: flex; align-items: center; gap: 14px; }
+.brand-logo {
+  width: 52px; height: 52px; flex-shrink: 0;
+  background: #070707; border-radius: 12px; padding: 9px;
+  object-fit: contain; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.brand-lockup-text { min-width: 0; }
+.brand-name {
+  font-family: var(--display); font-size: 22px; font-weight: 700;
+  letter-spacing: -0.3px; line-height: 1.15;
+  background: linear-gradient(120deg, var(--text), var(--accent-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.brand-acronym {
+  font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.4;
+}
+.brand-by {
+  font-size: 10.5px; color: var(--accent-2); font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase; margin-top: 4px;
+}
+
+.link-btn {
+  display: block; width: 100%; text-align: center;
+  background: none; border: none; cursor: pointer;
+  font-size: 12.5px; color: var(--text-dim);
+  padding: 4px 0; transition: color 0.12s;
+}
+.link-btn:hover { color: var(--accent-2); }

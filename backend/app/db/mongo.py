@@ -36,6 +36,9 @@ def ensure_indexes() -> None:
     db["tenants"].create_index([("api_key_hash", ASCENDING)], unique=True)
     db["tenants"].create_index([("slug", ASCENDING)], unique=True)
 
+    db["users"].create_index([("email", ASCENDING)], unique=True)
+    db["sessions"].create_index([("token_hash", ASCENDING)], unique=True)
+
     for name in ("brands", "runs", "assets", "audit"):
         db[name].create_index([("tenant_id", ASCENDING), ("created_at", DESCENDING)])
 

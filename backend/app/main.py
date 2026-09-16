@@ -19,6 +19,7 @@ if settings.langsmith_api_key:
     os.environ["LANGSMITH_API_KEY"] = settings.langsmith_api_key
 os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
 
+from app.api.routes_auth import router as auth_router  # noqa: E402
 from app.api.routes_autopilot import router as autopilot_router  # noqa: E402
 from app.api.routes_brands import router as brands_router  # noqa: E402
 from app.api.routes_runs import router as runs_router  # noqa: E402
@@ -74,6 +75,7 @@ app.add_middleware(
 )
 
 app.include_router(admin_router)
+app.include_router(auth_router)
 app.include_router(tenant_router)
 app.include_router(brands_router)
 app.include_router(runs_router)
