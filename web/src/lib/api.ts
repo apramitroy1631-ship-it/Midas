@@ -64,6 +64,8 @@ export const api = {
 
   assets: (c: Connection, brandId?: string) =>
     request<Asset[]>(c, "/v1/assets" + (brandId ? `?brand_id=${brandId}` : "")),
+  updateAsset: (c: Connection, id: string, body: unknown) =>
+    request<Asset>(c, `/v1/assets/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   audit: (c: Connection) => request<AuditEntry[]>(c, "/v1/audit"),
   stats: (c: Connection) => request<Stats>(c, "/v1/stats"),

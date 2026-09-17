@@ -80,9 +80,40 @@ def _audience(prompt: str) -> str:
     return aud.strip() or "operations decision-makers at mid-market companies"
 
 
+def _channel_override(prompt: str) -> list[str] | None:
+    """An explicit operator constraint, not a guess — see orchestrator.py's
+    CHANNEL OVERRIDE line. Checked before any heuristic scraping below."""
+    match = re.search(r"CHANNEL OVERRIDE[^:]*:\s*\[([^\]]*)\]", prompt)
+    if not match:
+        return None
+    pairs = re.findall(r"'([a-z0-9_-]+)'|\"([a-z0-9_-]+)\"", match.group(1), re.I)
+    flat = [(a or b).lower() for a, b in pairs]
+    return flat or None
+
+
+def _shares(n: int) -> list[float]:
+    """A front-loaded split summing to 1.0, for whatever number of channels."""
+    table = {1: [1.0], 2: [0.6, 0.4], 3: [0.5, 0.3, 0.2], 4: [0.4, 0.3, 0.2, 0.1]}
+    return table.get(n, [round(1 / n, 2)] * n)
+
+
 def _channels(prompt: str) -> list[str]:
+    override = _channel_override(prompt)
+    if override:
+        return override[:4]
+    # Per-channel objects, as in a PLAN's `channels: [{"channel": "email", ...}]`.
     found = re.findall(r'"channel"\s*:\s*"([a-z0-9_-]+)"', prompt, re.I)
     if not found:
+        # A flat array, as in StrategyOutput's `channels: ["email"]` — the
+        # [^\]{}:] exclusion keeps this from also matching an array of
+        # objects (which would leak field names like "channel" as if they
+        # were channel names).
+        arr = re.search(r'"channels"\s*:\s*\[([^\]{}:]*)\]', prompt, re.I)
+        if arr:
+            found = re.findall(r'"([a-z0-9_-]+)"', arr.group(1), re.I)
+    if not found:
+        # Last resort: whatever channel names appear anywhere at all (e.g.
+        # the brand's preferred_channels) — a guess, not a constraint.
         found = re.findall(r'"(linkedin|email|blog|x|instagram|tiktok)"', prompt, re.I)
     seen: list[str] = []
     for c in found:
@@ -107,8 +138,8 @@ def _plan(prompt: str) -> OrchestrationPlan:
     self_directed = "none supplied" in prompt
     if self_directed:
         goal = "Convert existing evaluators into booked demos by leading with " + usp
-    channels = ["linkedin", "email", "blog"]
-    shares = [0.5, 0.3, 0.2]
+    channels = _channel_override(prompt) or ["linkedin", "email", "blog"]
+    shares = _shares(len(channels))
     return OrchestrationPlan(
         goal=goal,
         goal_origin="self-directed" if self_directed else "operator",

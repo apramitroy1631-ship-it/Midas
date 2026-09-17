@@ -1,36 +1,52 @@
 import { useRef, useState } from "react";
 import { AgentRail } from "../components/AgentRail";
+import { ChannelIcon } from "../components/ChannelIcon";
 import { Badge, Card, Empty, Field, StatusBadge, duration } from "../components/ui";
-import { streamRun } from "../lib/api";
+import { api, streamRun } from "../lib/api";
 import type { Brand, Connection, StepEvent, Tenant } from "../lib/types";
 
 type Phase = "idle" | "running" | "done" | "error";
+
+const CHANNEL_OPTIONS = [
+  { id: "email", label: "Mail" },
+  { id: "blog", label: "Blog" },
+  { id: "linkedin", label: "LinkedIn" },
+];
 
 export function Launch({
   conn,
   tenant,
   brands,
   onFinished,
+  onOpenAsset,
 }: {
   conn: Connection;
   tenant: Tenant;
   brands: Brand[];
   onFinished: () => void;
+  onOpenAsset?: (id: string) => void;
 }) {
   const [brandId, setBrandId] = useState(brands[0]?.id ?? "");
   const [goal, setGoal] = useState("");
   const [audience, setAudience] = useState("");
   const [budget, setBudget] = useState("8000");
+  const [channels, setChannels] = useState<string[]>([]); // empty = let the Director choose
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [steps, setSteps] = useState<StepEvent[]>([]);
   const [meta, setMeta] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openingAsset, setOpeningAsset] = useState(false);
   const abort = useRef<AbortController | null>(null);
 
   const brand = brands.find((b) => b.id === brandId);
   const autonomous = tenant.policy.autonomy === "autonomous" && tenant.policy.auto_publish;
+  const mailOnly = channels.length === 1 && channels[0] === "email";
+
+  function toggleChannel(id: string) {
+    setChannels((cs) => (cs.includes(id) ? cs.filter((c) => c !== id) : [...cs, id]));
+  }
 
   async function run() {
     setSteps([]);
@@ -49,6 +65,7 @@ export function Launch({
           target_audience: audience.trim() || null,
           budget: Number(budget) || 0,
           trigger: "manual",
+          channels: channels.length ? channels : null,
         },
         (event, data) => {
           if (event === "start") setMeta(data);
@@ -58,6 +75,7 @@ export function Launch({
             setPhase(data.status === "failed" ? "error" : "done");
             if (data.error) setError(data.error);
             onFinished();
+            if (mailOnly && data.status !== "failed" && onOpenAsset) void openMailResult(data.run_id);
           } else if (event === "error") {
             setError(data.message);
             setPhase("error");
@@ -72,6 +90,21 @@ export function Launch({
       }
       setError(err instanceof Error ? err.message : String(err));
       setPhase("error");
+    }
+  }
+
+  /** The "only Mail" fast path: skip the outcome summary and go straight to
+   * editing the email that just got written. */
+  async function openMailResult(runId: string) {
+    setOpeningAsset(true);
+    try {
+      const fresh = await api.assets(conn, brandId);
+      const created = fresh.find((a) => a.run_id === runId && a.channel === "email");
+      if (created) onOpenAsset?.(created.id);
+    } catch {
+      /* the outcome card below still shows the run — not a dead end */
+    } finally {
+      setOpeningAsset(false);
     }
   }
 
@@ -91,7 +124,7 @@ export function Launch({
   }
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(280px, 320px) 1fr", gap: 18, alignItems: "start" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(360px, 440px) 1fr", gap: 18, alignItems: "start" }}>
       <div className="col">
         <Card title="Campaign brief" sub="Everything here is optional except the brand.">
           <Field label="Brand">
@@ -114,6 +147,35 @@ export function Launch({
             />
           </Field>
 
+          <Field
+            label="Channels"
+            hint={
+              mailOnly
+                ? "Just an email — this generates live and opens straight in the content editor when it's ready, no summary screen in between."
+                : "Leave on \"All\" and the Director picks 2–4 channels itself. Pick specific ones to constrain it."
+            }
+          >
+            <div className="row wrap gap-sm">
+              <button
+                type="button"
+                className={"chip-toggle" + (channels.length === 0 ? " active" : "")}
+                onClick={() => setChannels([])}
+              >
+                All channels
+              </button>
+              {CHANNEL_OPTIONS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={"chip-toggle" + (channels.includes(c.id) ? " active" : "")}
+                  onClick={() => toggleChannel(c.id)}
+                >
+                  <ChannelIcon channel={c.id} size={13} /> {c.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+
           <Field label="Audience override" hint="Optional. The Director sharpens this either way.">
             <input
               className="input"
@@ -134,10 +196,16 @@ export function Launch({
           <button
             className={"btn block " + (phase === "running" ? "danger" : "primary")}
             onClick={phase === "running" ? stop : run}
-            disabled={!brandId}
+            disabled={!brandId || openingAsset}
             style={{ marginTop: 4 }}
           >
-            {phase === "running" ? "■  Stop run" : "▶  Launch autonomous run"}
+            {phase === "running"
+              ? "■  Stop run"
+              : openingAsset
+              ? "Opening your email…"
+              : mailOnly
+              ? "✉  Generate email now"
+              : "▶  Launch autonomous run"}
           </button>
         </Card>
 

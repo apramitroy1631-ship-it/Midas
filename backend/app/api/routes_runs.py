@@ -12,7 +12,7 @@ from app.db.scoped import assets as assets_coll
 from app.db.scoped import audit as audit_coll
 from app.db.scoped import runs as runs_coll
 from app.graph.runner import RunError, stream_run
-from app.schemas.run import AssetResponse, RunDetail, RunRequest, RunSummary
+from app.schemas.run import AssetResponse, AssetUpdate, RunDetail, RunRequest, RunSummary
 from app.tenancy.auth import require_tenant
 
 router = APIRouter(prefix="/v1", tags=["Runs"], dependencies=[Depends(require_tenant)])
@@ -47,6 +47,7 @@ async def create_run_stream(payload: RunRequest, tenant: dict = Depends(require_
                 tenant=tenant,
                 goal=payload.goal,
                 audience=payload.target_audience,
+                channels=payload.channels,
                 budget=payload.budget,
                 trigger=payload.trigger,
             ):
@@ -93,6 +94,19 @@ def list_assets(
         query["status"] = status
     docs = assets_coll.find(query, sort=[("created_at", -1)], limit=limit)
     return [AssetResponse(**_summary(d)) for d in docs]
+
+
+@router.patch("/assets/{asset_id}", response_model=AssetResponse)
+def update_asset(asset_id: str, payload: AssetUpdate) -> Any:
+    """Persist edits made in the content canvas. Channel and status are not
+    editable here — those come from the pipeline, not a manual rewrite."""
+    changes = payload.model_dump(exclude_unset=True, exclude_none=True)
+    if changes and not assets_coll.update({"_id": asset_id}, changes):
+        raise HTTPException(status_code=404, detail="Asset not found.")
+    doc = assets_coll.find_one({"_id": asset_id})
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Asset not found.")
+    return AssetResponse(**_summary(doc))
 
 
 @router.get("/audit")

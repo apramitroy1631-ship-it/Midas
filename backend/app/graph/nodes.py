@@ -40,6 +40,7 @@ def orchestrate_node(state: RunState) -> dict:
         brand_context=state["brand_context"],
         goal=state.get("goal_input"),
         target_audience=state.get("audience_input"),
+        channels=state.get("channel_override"),
         budget=state.get("budget", 0.0),
         policy=state.get("policy", {}),
     )

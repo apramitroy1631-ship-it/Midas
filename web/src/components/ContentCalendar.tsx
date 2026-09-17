@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { Card, StatusBadge } from "./ui";
 import { AssetEditor } from "./AssetEditor";
-import type { Asset } from "../lib/types";
+import { ChannelIcon } from "./ChannelIcon";
+import type { Asset, Connection } from "../lib/types";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTHS = [
@@ -27,13 +28,18 @@ function statusDotTone(status: string): string {
  * them: an empty day still needs to offer "go make something."
  */
 export function ContentCalendar({
+  conn,
   assets,
   onGoLaunch,
+  onSaved,
 }: {
+  conn: Connection;
   assets: Asset[];
   onGoLaunch: () => void;
+  onSaved?: () => void;
 }) {
   const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [popover, setPopover] = useState<{ key: string; day: Date; top: number; left: number } | null>(null);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
@@ -134,13 +140,19 @@ export function ContentCalendar({
               </div>
               {popoverAssets.length === 0 ? (
                 <div className="col gap-sm" style={{ marginTop: 8 }}>
-                  <div className="dim" style={{ fontSize: 12 }}>Nothing here yet.</div>
-                  <button
-                    className="btn primary sm"
-                    onClick={() => { setPopover(null); onGoLaunch(); }}
-                  >
-                    Publish content for this campaign
-                  </button>
+                  <div className="dim" style={{ fontSize: 12 }}>
+                    {popover.day < todayStart
+                      ? "Nothing was published on this day."
+                      : "Nothing here yet."}
+                  </div>
+                  {popover.day >= todayStart && (
+                    <button
+                      className="btn primary sm"
+                      onClick={() => { setPopover(null); onGoLaunch(); }}
+                    >
+                      Publish content for this campaign
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="col gap-sm" style={{ marginTop: 8 }}>
@@ -150,10 +162,19 @@ export function ContentCalendar({
                       className="cal-day-run"
                       onClick={() => { setPopover(null); setEditingAsset(a); }}
                     >
+                      <span className="cal-channel-icon"><ChannelIcon channel={a.channel} size={13} /></span>
                       <StatusBadge status={a.status} />
-                      <span className="truncate" style={{ maxWidth: 220 }}>{a.headline || "Untitled"}</span>
+                      <span className="truncate" style={{ maxWidth: 190 }}>{a.headline || "Untitled"}</span>
                     </button>
                   ))}
+                  {popover.day >= todayStart && (
+                    <button
+                      className="btn ghost sm"
+                      onClick={() => { setPopover(null); onGoLaunch(); }}
+                    >
+                      + Publish new content
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -161,7 +182,14 @@ export function ContentCalendar({
         )}
       </div>
 
-      {editingAsset && <AssetEditor asset={editingAsset} onClose={() => setEditingAsset(null)} />}
+      {editingAsset && (
+        <AssetEditor
+          asset={editingAsset}
+          conn={conn}
+          onClose={() => setEditingAsset(null)}
+          onSaved={onSaved}
+        />
+      )}
     </Card>
   );
 }

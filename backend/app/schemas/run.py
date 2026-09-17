@@ -18,6 +18,7 @@ class RunRequest(BaseModel):
     target_audience: str | None = None
     budget: float = 5000.0
     trigger: str = "manual"  # manual | autopilot | api
+    channels: list[str] | None = None  # e.g. ["email"] — omit to let the Director choose
 
 
 class RunSummary(BaseModel):
@@ -63,3 +64,11 @@ class AssetResponse(BaseModel):
     seo: dict[str, Any] | None = None
     goal: str = ""
     created_at: str = ""
+
+
+class AssetUpdate(BaseModel):
+    """Edits made in the content canvas. All optional — only what changed is sent."""
+
+    headline: str | None = None
+    body: str | None = None
+    call_to_action: str | None = None

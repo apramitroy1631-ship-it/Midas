@@ -68,6 +68,7 @@ export default function App() {
 
   const [view, setView] = useState<View>("overview");
   const [openRunId, setOpenRunId] = useState<string | null>(null);
+  const [openAssetId, setOpenAssetId] = useState<string | null>(null);
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -269,20 +270,40 @@ export default function App() {
           )}
 
           {tenant && view === "launch" && (
-            <Launch conn={conn} tenant={tenant} brands={brands} onFinished={refresh} />
+            <Launch
+              conn={conn}
+              tenant={tenant}
+              brands={brands}
+              onFinished={refresh}
+              onOpenAsset={(id) => {
+                setOpenAssetId(id);
+                setView("library");
+              }}
+            />
           )}
 
           {tenant && view === "runs" && (
             <Runs
               conn={conn}
               runs={runs}
+              brands={brands}
               openRunId={openRunId}
               onOpenRun={setOpenRunId}
               onCloseRun={() => setOpenRunId(null)}
             />
           )}
 
-          {tenant && view === "library" && <Library assets={assets} brands={brands} />}
+          {tenant && view === "library" && (
+            <Library
+              conn={conn}
+              assets={assets}
+              brands={brands}
+              openAssetId={openAssetId}
+              onOpenAsset={setOpenAssetId}
+              onCloseAsset={() => setOpenAssetId(null)}
+              onSaved={refresh}
+            />
+          )}
 
           {tenant && view === "brands" && (
             <Brands conn={conn} brands={brands} onChanged={refresh} />

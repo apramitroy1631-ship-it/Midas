@@ -23,6 +23,7 @@ class RunState(TypedDict, total=False):
     model_overrides: dict[str, Any]
     goal_input: str | None
     audience_input: str | None
+    channel_override: list[str] | None
     budget: float
 
     # agent outputs

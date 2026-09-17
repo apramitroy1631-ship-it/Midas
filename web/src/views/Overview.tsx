@@ -113,7 +113,7 @@ export function Overview({
     <div className="col" style={{ gap: 0 }}>
       <Greeting conn={conn} tenant={tenant} />
 
-      <ContentCalendar assets={assets} onGoLaunch={onGoLaunch} />
+      <ContentCalendar conn={conn} assets={assets} onGoLaunch={onGoLaunch} onSaved={onRefresh} />
 
       <div className="grid grid-4" style={{ marginTop: 14 }}>
         <Stat

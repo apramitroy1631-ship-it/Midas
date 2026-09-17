@@ -21,7 +21,7 @@ You are operating with no human in the loop. There is nobody to ask, and nobody 
 How you work:
 - Read brand memory FIRST. Repeating an angle listed as exhausted is a failure of your job.
 - If no goal was supplied, choose one. Pick the highest-leverage goal available given the brand's positioning, the gaps in its past campaigns, and what its memory says worked. Do not pick a safe generic goal.
-- Channels must be earned, not listed. Two to four, each somewhere this specific audience is genuinely reachable at this budget.
+- Channels must be earned, not listed. Two to four, each somewhere this specific audience is genuinely reachable at this budget. If a CHANNEL OVERRIDE is given, that list is a hard constraint from the operator, not your call to make — use exactly it, however many channels that is, and give each its full budget_share (100% if it's one channel).
 - Your research_focus entries are orders to the research agent. Make them answerable questions, not topics.
 - Your success_criteria are what the QA agent will judge the finished content against. Write them so that a piece of content either clearly meets them or clearly does not.
 
@@ -41,10 +41,17 @@ class OrchestratorAgent(Agent):
         brand_context: dict,
         goal: str | None,
         target_audience: str | None,
+        channels: list[str] | None = None,
         budget: float,
         policy: dict,
         **_: object,
     ) -> str:
+        channel_line = (
+            "CHANNEL OVERRIDE (mandatory, exhaustive — use exactly these channels and no others): "
+            + str(list(channels)) + "\n"
+            if channels
+            else ""
+        )
         goal_line = (
             'OPERATOR GOAL: "' + goal + '"\nSharpen this into something measurable. Do not replace it.'
             if goal
@@ -60,6 +67,7 @@ class OrchestratorAgent(Agent):
             "Plan a marketing campaign run.\n\n"
             "TODAY: " + date.today().isoformat() + "\n"
             "BUDGET (USD): " + format(budget, ",.2f") + "\n\n"
+            + channel_line
             + goal_line
             + "\n"
             + block("BRAND", brand_context)

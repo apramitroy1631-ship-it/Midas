@@ -1,32 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AgentRail } from "../components/AgentRail";
 import {
   Badge,
   Card,
   Drawer,
   Empty,
+  Field,
   StatusBadge,
   duration,
   timeAgo,
 } from "../components/ui";
 import { api } from "../lib/api";
-import type { Connection, RunDetail, RunSummary } from "../lib/types";
+import type { Brand, Connection, RunDetail, RunSummary } from "../lib/types";
 
 export function Runs({
   conn,
   runs,
+  brands,
   openRunId,
   onCloseRun,
   onOpenRun,
 }: {
   conn: Connection;
   runs: RunSummary[];
+  brands: Brand[];
   openRunId: string | null;
   onCloseRun: () => void;
   onOpenRun: (id: string) => void;
 }) {
   const [detail, setDetail] = useState<RunDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [brandId, setBrandId] = useState("");
+  const [search, setSearch] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const fromTime = from ? new Date(from).getTime() : null;
+    const toTime = to ? new Date(to).getTime() + 86_400_000 - 1 : null;
+    return runs.filter((r) => {
+      if (brandId && r.brand_id !== brandId) return false;
+      if (q && !r.goal.toLowerCase().includes(q)) return false;
+      const created = new Date(r.created_at).getTime();
+      if (fromTime && created < fromTime) return false;
+      if (toTime && created > toTime) return false;
+      return true;
+    });
+  }, [runs, brandId, search, from, to]);
+  const anyFilterActive = !!(brandId || search || from || to);
 
   useEffect(() => {
     if (!openRunId) {
@@ -51,6 +73,36 @@ export function Runs({
         {runs.length === 0 ? (
           <Empty icon="◆" title="No runs yet" text="Every campaign the system executes is recorded here with its full agent trace." />
         ) : (
+          <>
+            <div className="row wrap" style={{ marginBottom: 12 }}>
+              <input
+                className="input"
+                style={{ maxWidth: 320 }}
+                placeholder="Search goal…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select className="select" style={{ width: 180 }} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
+                <option value="">All brands</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <Field label="From"><input className="input mono" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
+              <Field label="To"><input className="input mono" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
+              <span className="spacer" />
+              <div className="row" style={{ alignSelf: "flex-end", marginBottom: 13 }}>
+                {anyFilterActive && (
+                  <button className="btn ghost sm" onClick={() => { setBrandId(""); setSearch(""); setFrom(""); setTo(""); }}>
+                    Clear filters
+                  </button>
+                )}
+                <span className="mono dim">{filtered.length} / {runs.length}</span>
+              </div>
+            </div>
+          {filtered.length === 0 ? (
+            <Empty icon="◆" title="Nothing matches" text="Try clearing a filter or broadening the search." />
+          ) : (
           <div className="table-wrap">
             <table className="table">
               <thead>
@@ -68,7 +120,7 @@ export function Runs({
                 </tr>
               </thead>
               <tbody>
-                {runs.map((r) => (
+                {filtered.map((r) => (
                   <tr key={r.id} onClick={() => onOpenRun(r.id)}>
                     <td className="truncate" style={{ maxWidth: 280 }}>
                       {r.goal || "—"}
@@ -90,6 +142,8 @@ export function Runs({
               </tbody>
             </table>
           </div>
+          )}
+          </>
         )}
       </Card>
 

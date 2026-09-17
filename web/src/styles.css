@@ -46,33 +46,40 @@
 }
 
 [data-theme="light"] {
-  --bg: #faf8f5;
+  /* Royal blue, not cream — a cool, low-glare register instead of the
+     warm beige this started as (that one read as eye-strain-y on a
+     bright screen for a monitoring surface people leave open all day). */
+  --bg: #f3f6fc;
   --surface: #ffffff;
-  --surface-2: #f5f1ea;
-  --surface-3: #ece5da;
-  --border: #e2d9c9;
-  --border-soft: #ece5da;
+  --surface-2: #eaf0fa;
+  --surface-3: #dde7f6;
+  --border: #c7d6ee;
+  --border-soft: #e3eaf8;
 
-  --text: #201c17;
-  --text-muted: #6b6155;
-  --text-dim: #948a7c;
+  --text: #16223f;
+  --text-muted: #4c5b7d;
+  --text-dim: #8592ac;
 
-  --accent: #c8283c;
-  --accent-dim: rgba(200, 40, 60, 0.09);
-  --accent-2: #96741f;
-  --accent-2-dim: rgba(150, 116, 31, 0.1);
-  --info: #205f96;
-  --info-dim: rgba(32, 95, 150, 0.1);
+  /* The crimson/gold Midas branding is a dark-mode thing — light mode gets
+     its own royal-blue duo instead, used everywhere that reaches for
+     --accent/--accent-2 (nav highlight, primary buttons, hairlines, glows).
+     Only the wordmark's own shimmer keeps gold, hardcoded in styles below. */
+  --accent: #2f4ea8;
+  --accent-dim: rgba(47, 78, 168, 0.09);
+  --accent-2: #3f72d1;
+  --accent-2-dim: rgba(63, 114, 209, 0.12);
+  --info: #1f3f85;
+  --info-dim: rgba(31, 63, 133, 0.1);
 
   --ok: #227a56;
   --ok-dim: rgba(34, 122, 86, 0.1);
-  --warn: #8a6a1f;
-  --warn-dim: rgba(138, 106, 31, 0.1);
+  --warn: #9a6a12;
+  --warn-dim: rgba(154, 106, 18, 0.1);
   --danger: #b3272c;
   --danger-dim: rgba(179, 39, 44, 0.1);
-  --running: #205f96;
+  --running: #2f4ea8;
 
-  --shadow: 0 8px 24px rgba(40, 28, 12, 0.08);
+  --shadow: 0 8px 24px rgba(22, 34, 63, 0.08);
   color-scheme: light;
 }
 
@@ -106,7 +113,16 @@ a { color: var(--info); text-decoration: none; }
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
-.view-enter { animation: view-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* Opacity-only, deliberately not transform: this wrapper contains Drawer
+   and the calendar popover, both position:fixed — a transform here (even
+   mid-animation, or stuck if the tab was backgrounded while it ran) creates
+   a containing block that hijacks their fixed positioning to this element's
+   own small box instead of the viewport. Cost a few px of slide for it. */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.view-enter { animation: fade-in 0.28s ease both; }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -139,24 +155,24 @@ a { color: var(--info); text-decoration: none; }
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 10px 18px;
+  gap: 12px;
+  padding: 6px 10px 22px;
 }
 .logo-mark-img {
-  width: 30px; height: 30px;
+  width: 38px; height: 38px;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #070707;
-  padding: 4px;
+  padding: 5px;
   object-fit: contain;
 }
 .logo-text {
   font-family: var(--display); font-weight: 700; letter-spacing: 0.2px;
-  font-size: 21px; cursor: default;
+  font-size: 26px; cursor: default;
 }
 .logo-sub {
-  font-size: 10.5px; color: var(--text-dim); font-weight: 600;
-  letter-spacing: 0.4px; text-transform: uppercase;
+  font-size: 11.5px; color: var(--text-dim); font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
 }
 
 .nav-label {
@@ -170,7 +186,7 @@ a { color: var(--info); text-decoration: none; }
   width: 100%; padding: 6px 10px;
   border: none; background: transparent; border-radius: var(--radius-sm);
   color: var(--text-muted); cursor: pointer; text-align: left;
-  font-size: 13.5px; transition: background 0.15s, color 0.15s;
+  font-size: 13.5px; font-weight: 560; transition: background 0.15s, color 0.15s;
 }
 .nav-item::before {
   content: ""; position: absolute; left: -12px; top: 50%;
@@ -208,6 +224,7 @@ a { color: var(--info); text-decoration: none; }
   transition: background 0.15s, color 0.15s;
 }
 .nav-item.active .nav-count { background: var(--accent-2); color: #1a1400; }
+[data-theme="light"] .nav-item.active .nav-count { color: #fff; }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
@@ -225,7 +242,7 @@ a { color: var(--info); text-decoration: none; }
   content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
   background: linear-gradient(90deg, var(--accent-dim), transparent 55%);
 }
-.topbar h1 { font-family: var(--display); font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -0.1px; }
+.topbar h1 { font-family: var(--display); font-size: 21px; font-weight: 680; margin: 0; letter-spacing: -0.2px; }
 .topbar-spacer { flex: 1; }
 
 .content { flex: 1; overflow-y: auto; padding: 22px; }
@@ -281,7 +298,7 @@ a { color: var(--info); text-decoration: none; }
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 14px;
 }
-.card-title { font-size: 13.5px; font-weight: 600; margin: 0; }
+.card-title { font-size: 16.5px; font-weight: 650; margin: 0; font-family: var(--display); letter-spacing: -0.1px; }
 .card-sub { font-size: 12px; color: var(--text-dim); margin: 2px 0 0; }
 
 .grid { display: grid; gap: 14px; }
@@ -511,7 +528,9 @@ a { color: var(--info); text-decoration: none; }
   background: var(--surface); border: 1px solid var(--border-soft);
   border-radius: var(--radius); padding: 16px;
   display: flex; flex-direction: column; gap: 9px;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
+.asset:hover { transform: translateY(-2px); border-color: var(--accent-2); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
 .asset-head { display: flex; align-items: center; gap: 8px; }
 .asset-headline { font-size: 14.5px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; }
 .asset-body { font-size: 13px; color: var(--text-muted); line-height: 1.62; }
@@ -539,7 +558,7 @@ a { color: var(--info); text-decoration: none; }
   padding: 16px 20px; border-bottom: 1px solid var(--border-soft);
   flex-shrink: 0;
 }
-.drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 20px 40px; }
 
 @keyframes slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
@@ -626,13 +645,16 @@ a { color: var(--info); text-decoration: none; }
   font-weight: 650; color: var(--text);
   text-shadow: 0 0 10px var(--accent-2-dim);
 }
-.cal-cell:hover:not(.empty) { background: var(--surface-3); transform: translateY(-2px); }
+.cal-cell:hover:not(.empty) {
+  background: var(--surface-3); transform: translateY(-2px);
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 1px var(--accent-2-dim), 0 6px 16px var(--accent-2-dim);
+}
 .cal-cell.today { border-color: var(--accent-2); }
 .cal-cell.today .cal-cell-num {
   color: var(--accent-2); text-shadow: 0 0 12px var(--accent-2-dim), 0 0 4px var(--accent-2-dim);
 }
 .cal-cell.active { background: var(--surface-3); }
-.cal-cell:hover { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3); }
 .cal-cell.selected { border-color: var(--accent); background: var(--accent-dim); }
 .cal-dots { display: flex; gap: 2px; }
 .cal-dot { width: 4px; height: 4px; border-radius: 50%; }
@@ -653,6 +675,8 @@ a { color: var(--info); text-decoration: none; }
   transition: background 0.12s, border-color 0.12s;
 }
 .cal-day-run:hover { background: var(--surface-3); border-color: var(--border); }
+.cal-channel-icon { display: inline-flex; color: var(--text-dim); flex-shrink: 0; }
+.asset-channel-icon { display: inline-flex; color: var(--info); flex-shrink: 0; }
 
 /* --- tabs (content editor) ------------------------------------------------ */
 
@@ -671,6 +695,20 @@ a { color: var(--info); text-decoration: none; }
   outline: none; overflow-y: auto;
 }
 .rich-editor:focus { border-color: var(--info); box-shadow: 0 0 0 3px var(--info-dim); }
+
+/* --- channel chip toggle (New Campaign) ----------------------------------- */
+
+.chip-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 20px;
+  background: var(--surface-2); border: 1px solid var(--border-soft);
+  color: var(--text-muted); font-size: 12.5px; font-weight: 550; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chip-toggle:hover { background: var(--surface-3); color: var(--text); }
+.chip-toggle.active {
+  background: var(--accent-dim); border-color: var(--accent); color: var(--accent);
+}
 
 /* --- MIDAS gold shimmer ---------------------------------------------------
    The one deliberately un-subtle flourish in the whole palette: the product
