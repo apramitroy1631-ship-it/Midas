@@ -11,7 +11,7 @@ import {
   timeAgo,
 } from "../components/ui";
 import { api } from "../lib/api";
-import type { AutopilotConfig, Connection, RunSummary, Stats, Tenant } from "../lib/types";
+import type { Asset, AutopilotConfig, Connection, RunSummary, Stats, Tenant } from "../lib/types";
 
 const QUIPS = [
   "Your campaigns are turning to gold.",
@@ -68,6 +68,7 @@ export function Overview({
   tenant,
   stats,
   runs,
+  assets,
   autopilot,
   onRefresh,
   onOpenRun,
@@ -77,6 +78,7 @@ export function Overview({
   tenant: Tenant;
   stats: Stats | null;
   runs: RunSummary[];
+  assets: Asset[];
   autopilot: AutopilotConfig | null;
   onRefresh: () => void;
   onOpenRun: (id: string) => void;
@@ -111,7 +113,7 @@ export function Overview({
     <div className="col" style={{ gap: 0 }}>
       <Greeting conn={conn} tenant={tenant} />
 
-      <ContentCalendar runs={runs} onOpenRun={onOpenRun} />
+      <ContentCalendar assets={assets} onGoLaunch={onGoLaunch} />
 
       <div className="grid grid-4" style={{ marginTop: 14 }}>
         <Stat

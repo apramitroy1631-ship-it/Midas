@@ -257,6 +257,7 @@ export default function App() {
               tenant={tenant}
               stats={stats}
               runs={runs}
+              assets={assets}
               autopilot={autopilot}
               onRefresh={refresh}
               onOpenRun={(id) => {

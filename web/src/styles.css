@@ -151,8 +151,8 @@ a { color: var(--info); text-decoration: none; }
   object-fit: contain;
 }
 .logo-text {
-  font-family: var(--display); font-weight: 650; letter-spacing: 0;
-  font-size: 16px; cursor: default;
+  font-family: var(--display); font-weight: 700; letter-spacing: 0.2px;
+  font-size: 21px; cursor: default;
 }
 .logo-sub {
   font-size: 10.5px; color: var(--text-dim); font-weight: 600;
@@ -246,10 +246,14 @@ a { color: var(--info); text-decoration: none; }
   display: grid; place-items: center;
   width: 32px; height: 32px; flex-shrink: 0;
   background: var(--surface-2); border: 1px solid var(--border-soft);
-  border-radius: 50%; color: var(--text-muted); cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  border-radius: 50%; color: var(--accent-2); cursor: pointer;
+  filter: drop-shadow(0 0 4px var(--accent-2-dim));
+  transition: background 0.15s, color 0.15s, transform 0.15s, filter 0.15s;
 }
-.theme-toggle:hover { background: var(--surface-3); color: var(--text); transform: rotate(-14deg); }
+.theme-toggle:hover {
+  background: var(--surface-3); color: var(--accent-2); transform: rotate(-14deg);
+  filter: drop-shadow(0 0 8px var(--accent-2-dim));
+}
 
 /* --- cards -------------------------------------------------------------- */
 
@@ -595,6 +599,13 @@ a { color: var(--info); text-decoration: none; }
 
 .stat-quality-card { grid-column: span 2; }
 
+.cal-month-label {
+  font-size: 13px; min-width: 118px; text-align: center;
+  font-weight: 650; color: var(--text);
+  text-shadow: 0 0 14px var(--accent-2-dim);
+}
+
+.cal-body { position: relative; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .cal-head { margin-bottom: 6px; }
 .cal-weekday {
@@ -607,48 +618,78 @@ a { color: var(--info); text-decoration: none; }
   aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; border: 1px solid transparent; border-radius: var(--radius-sm);
   background: var(--surface-2); color: var(--text-muted);
-  cursor: default; font-size: 12px; font-family: var(--mono);
+  cursor: pointer; font-size: 13px; font-family: var(--mono);
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
-.cal-cell.empty { background: transparent; }
-.cal-cell.today { border-color: var(--accent-2); color: var(--text); font-weight: 700; }
-.cal-cell.active {
-  cursor: pointer; background: var(--surface-3); color: var(--text);
+.cal-cell.empty { background: transparent; cursor: default; }
+.cal-cell-num {
+  font-weight: 650; color: var(--text);
+  text-shadow: 0 0 10px var(--accent-2-dim);
 }
-.cal-cell.active:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3); }
+.cal-cell:hover:not(.empty) { background: var(--surface-3); transform: translateY(-2px); }
+.cal-cell.today { border-color: var(--accent-2); }
+.cal-cell.today .cal-cell-num {
+  color: var(--accent-2); text-shadow: 0 0 12px var(--accent-2-dim), 0 0 4px var(--accent-2-dim);
+}
+.cal-cell.active { background: var(--surface-3); }
+.cal-cell:hover { box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3); }
 .cal-cell.selected { border-color: var(--accent); background: var(--accent-dim); }
 .cal-dots { display: flex; gap: 2px; }
 .cal-dot { width: 4px; height: 4px; border-radius: 50%; }
-.cal-day-detail {
-  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-soft);
-  animation: view-in 0.2s ease both;
+
+.cal-backdrop { position: fixed; inset: 0; z-index: 40; }
+.cal-popover {
+  position: absolute; z-index: 50; width: 260px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+  animation: view-in 0.15s ease both;
 }
+.cal-popover-title { font-size: 12.5px; font-weight: 650; color: var(--text); }
 .cal-day-run {
   display: flex; align-items: center; gap: 10px; width: 100%;
-  background: var(--surface-2); border: 1px solid var(--border-soft);
+  background: var(--surface); border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm); padding: 8px 12px;
   cursor: pointer; text-align: left; font-size: 12.5px; color: var(--text);
   transition: background 0.12s, border-color 0.12s;
 }
 .cal-day-run:hover { background: var(--surface-3); border-color: var(--border); }
 
+/* --- tabs (content editor) ------------------------------------------------ */
+
+.tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 3px; border-radius: var(--radius-sm); }
+.tab {
+  border: none; background: transparent; color: var(--text-dim);
+  padding: 6px 14px; border-radius: 5px; font-size: 12.5px; font-weight: 550;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--surface-3); color: var(--text); }
+
+.rich-editor {
+  min-height: 320px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; font-size: 13.5px; line-height: 1.6;
+  outline: none; overflow-y: auto;
+}
+.rich-editor:focus { border-color: var(--info); box-shadow: 0 0 0 3px var(--info-dim); }
+
 /* --- MIDAS gold shimmer ---------------------------------------------------
    The one deliberately un-subtle flourish in the whole palette: the product
    is named after the literal Midas touch, so the wordmark gets to shine. */
 
 @keyframes gold-shimmer {
-  to { background-position: 200% center; }
+  to { background-position: 300% center; }
 }
 .logo-text, .brand-name {
   background-image: linear-gradient(
     100deg,
-    var(--text) 0%, var(--text) 35%,
-    #f7dfa0 46%, #fff6db 50%, #f7dfa0 54%,
-    var(--text) 65%, var(--text) 100%
+    #caa353 0%, #caa353 20%,
+    #fff6db 32%, #ffe9a8 38%, #fff6db 44%,
+    #caa353 56%, #caa353 100%
   );
-  background-size: 250% auto;
+  background-size: 300% auto;
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: gold-shimmer 3.6s linear infinite;
+  animation: gold-shimmer 3.2s linear infinite;
+  filter: drop-shadow(0 0 10px var(--accent-2-dim));
 }
 
 /* --- setup screen ------------------------------------------------------- */
@@ -685,10 +726,8 @@ a { color: var(--info); text-decoration: none; }
 }
 .brand-lockup-text { min-width: 0; }
 .brand-name {
-  font-family: var(--display); font-size: 22px; font-weight: 650;
-  letter-spacing: -0.1px; line-height: 1.15;
-  background: linear-gradient(120deg, var(--text) 45%, var(--accent-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  font-family: var(--display); font-size: 32px; font-weight: 700;
+  letter-spacing: 0.2px; line-height: 1.15;
 }
 .brand-acronym {
   font-size: 11px; color: var(--text-dim); margin-top: 2px; line-height: 1.4;
