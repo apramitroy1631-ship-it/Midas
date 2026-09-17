@@ -18,6 +18,10 @@ behaviour.
 **→ [docs/API.md](docs/API.md)** — route reference and the SSE streaming contract.
 **→ [docs/DEPLOY.md](docs/DEPLOY.md)** — hosting the console on Vercel and the
 backend on Railway (or any container host).
+**→ [docs/SCHEMAS.md](docs/SCHEMAS.md)** — every MongoDB collection, field by field.
+**→ [docs/BACKEND_GUIDE.md](docs/BACKEND_GUIDE.md)** — onboarding for a backend engineer.
+**→ [docs/FRONTEND_GUIDE.md](docs/FRONTEND_GUIDE.md)** — onboarding for a frontend engineer.
+**→ [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** — the QA click-through checklist.
 
 ---
 
