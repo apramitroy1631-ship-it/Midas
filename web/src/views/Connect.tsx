@@ -51,6 +51,7 @@ export function Connect({
         label: body.tenant_name ?? "MIDAS",
         apiKey: body.session_token,
         baseUrl: baseUrl.trim(),
+        userEmail: body.email,
       });
       store.setActive(saved.id);
       onConnected(saved);

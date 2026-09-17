@@ -169,6 +169,27 @@ export function Settings({
           Remove this connection
         </button>
       </Card>
+
+      <Card title="Isolation" sub="What this API key can reach">
+        <dl className="kv" style={{ fontSize: 12.5 }}>
+          <dt>Tenant</dt>
+          <dd>{tenant.name}</dd>
+          <dt>Tenant id</dt>
+          <dd className="mono dim">{tenant.id}</dd>
+          <dt>Key</dt>
+          <dd className="mono dim">{tenant.api_key_prefix}</dd>
+          <dt>Autonomy</dt>
+          <dd>
+            <Badge tone={tenant.policy.autonomy === "autonomous" ? "ok" : "warn"}>
+              {tenant.policy.autonomy}
+            </Badge>
+          </dd>
+        </dl>
+        <p className="dim" style={{ fontSize: 11.5, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}>
+          Every query this key makes is filtered by tenant id in the data layer, not by the caller.
+          Another tenant's brands, runs, and assets are unreachable with it.
+        </p>
+      </Card>
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ContentCalendar } from "../components/ContentCalendar";
 import {
   Badge,
   Card,
@@ -11,6 +12,56 @@ import {
 } from "../components/ui";
 import { api } from "../lib/api";
 import type { AutopilotConfig, Connection, RunSummary, Stats, Tenant } from "../lib/types";
+
+const QUIPS = [
+  "Your campaigns are turning to gold.",
+  "Autonomous marketing, zero micromanagement.",
+  "Every run gets smarter than the last one.",
+  "No human in the loop — just results.",
+  "The agents never sleep. Neither does your growth.",
+  "Built to think, built to ship.",
+  "Precision, at machine speed.",
+  "Consider your pipeline handled.",
+];
+
+function greetingWord(): string {
+  const h = new Date().getHours();
+  if (h < 5) return "Burning the midnight oil";
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  if (h < 21) return "Good evening";
+  return "Working late";
+}
+
+function displayName(conn: Connection, tenant: Tenant): string {
+  if (conn.userEmail) {
+    const local = conn.userEmail.split("@")[0];
+    return local.charAt(0).toUpperCase() + local.slice(1);
+  }
+  return tenant.name;
+}
+
+function Greeting({ conn, tenant }: { conn: Connection; tenant: Tenant }) {
+  const [quipIdx, setQuipIdx] = useState(() => Math.floor(Math.random() * QUIPS.length));
+  const name = useMemo(() => displayName(conn, tenant), [conn, tenant]);
+
+  function nextQuip() {
+    setQuipIdx((i) => {
+      let next = Math.floor(Math.random() * QUIPS.length);
+      while (next === i && QUIPS.length > 1) next = Math.floor(Math.random() * QUIPS.length);
+      return next;
+    });
+  }
+
+  return (
+    <div className="greeting">
+      <div className="greeting-title">{greetingWord()}, {name}</div>
+      <button className="greeting-quip" onClick={nextQuip} title="Click for another one">
+        {QUIPS[quipIdx]} <span className="greeting-quip-hint">↻</span>
+      </button>
+    </div>
+  );
+}
 
 export function Overview({
   conn,
@@ -58,7 +109,11 @@ export function Overview({
 
   return (
     <div className="col" style={{ gap: 0 }}>
-      <div className="grid grid-4">
+      <Greeting conn={conn} tenant={tenant} />
+
+      <ContentCalendar runs={runs} onOpenRun={onOpenRun} />
+
+      <div className="grid grid-4" style={{ marginTop: 14 }}>
         <Stat
           icon="◆"
           label="Campaign runs"
@@ -87,21 +142,18 @@ export function Overview({
             (stats?.avg_revisions ?? 0) > 1.5 ? "warn" : (stats?.avg_revisions ?? 0) > 0 ? "ok" : undefined
           }
         />
-      </div>
-
-      <div className="grid grid-2" style={{ marginTop: 14 }}>
-        <Card title="Quality" sub="Averaged across published runs">
+        <Card title="Quality" sub="Averaged across published runs" className="stat-quality-card">
           {stats?.avg_brand_safety || stats?.avg_goal_alignment ? (
-            <div className="grid grid-2">
+            <div className="row" style={{ gap: 20 }}>
               <div>
                 <div className="field-label">Brand safety</div>
-                <div className="mono" style={{ fontSize: 26, fontWeight: 620 }}>
+                <div className="mono" style={{ fontSize: 22, fontWeight: 620 }}>
                   {stats?.avg_brand_safety ?? "—"}
                 </div>
               </div>
               <div>
                 <div className="field-label">Goal alignment</div>
-                <div className="mono" style={{ fontSize: 26, fontWeight: 620 }}>
+                <div className="mono" style={{ fontSize: 22, fontWeight: 620 }}>
                   {stats?.avg_goal_alignment ?? "—"}
                 </div>
               </div>
@@ -112,7 +164,13 @@ export function Overview({
             </div>
           )}
         </Card>
+      </div>
 
+      {/* Autopilot card — pulled off the dashboard for now, kept here so it's a
+          one-step re-add. Still fully wired: Settings can enable/disable the
+          scheduler itself, this was only the manual "run one cycle now" view. */}
+      {/*
+      <div className="grid grid-2" style={{ marginTop: 14 }}>
         <Card
           title="Autopilot"
           sub="Unattended operation"
@@ -152,8 +210,9 @@ export function Overview({
           </div>
         </Card>
       </div>
+      */}
 
-      <div className="grid grid-2" style={{ marginTop: 14 }}>
+      <div style={{ marginTop: 14 }}>
         <Card title="Usage this period" sub={tenant.usage.period}>
           <div className="col gap-sm">
             <div className="row" style={{ fontSize: 12.5 }}>
@@ -180,27 +239,6 @@ export function Overview({
               </span>
             </div>
           </div>
-        </Card>
-
-        <Card title="Isolation" sub="What this API key can reach">
-          <dl className="kv" style={{ fontSize: 12.5 }}>
-            <dt>Tenant</dt>
-            <dd>{tenant.name}</dd>
-            <dt>Tenant id</dt>
-            <dd className="mono dim">{tenant.id}</dd>
-            <dt>Key</dt>
-            <dd className="mono dim">{tenant.api_key_prefix}</dd>
-            <dt>Autonomy</dt>
-            <dd>
-              <Badge tone={tenant.policy.autonomy === "autonomous" ? "ok" : "warn"}>
-                {tenant.policy.autonomy}
-              </Badge>
-            </dd>
-          </dl>
-          <p className="dim" style={{ fontSize: 11.5, marginTop: 12, marginBottom: 0, lineHeight: 1.6 }}>
-            Every query this key makes is filtered by tenant id in the data layer, not by the caller.
-            Another tenant's brands, runs, and assets are unreachable with it.
-          </p>
         </Card>
       </div>
 

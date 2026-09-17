@@ -44,6 +44,7 @@ export const store = {
       apiKey: conn.apiKey,
       baseUrl: conn.baseUrl,
       color: conn.color ?? PALETTE[list.length % PALETTE.length],
+      userEmail: conn.userEmail,
     };
     if (existing >= 0) list[existing] = full;
     else list.push(full);

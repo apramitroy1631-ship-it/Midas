@@ -151,4 +151,6 @@ export interface Connection {
   apiKey: string;
   baseUrl: string;
   color: string;
+  /** Only set when connected via email/password sign-in, not the raw API key fallback. */
+  userEmail?: string;
 }
