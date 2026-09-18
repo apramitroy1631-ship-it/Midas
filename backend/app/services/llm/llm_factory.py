@@ -10,6 +10,7 @@ from app.core.settings import settings
 from .anthropic_provider import AnthropicProvider
 from .base import BaseLLM
 from .gemini_provider import GeminiProvider
+from .groq_provider import GroqProvider
 from .ollama_provider import OllamaProvider
 from .openai_provider import OpenAIProvider
 from .simulator_provider import SimulatorProvider
@@ -29,6 +30,8 @@ def _build(provider: str, model: str) -> BaseLLM:
         return AnthropicProvider(model=model or settings.anthropic_model_default)
     if provider == "gemini":
         return GeminiProvider(model=model or settings.gemini_model_default)
+    if provider == "groq":
+        return GroqProvider(model=model or settings.groq_model_default)
     if provider == "simulator":
         return SimulatorProvider(model=model)
     raise ValueError("Unsupported LLM provider: " + repr(provider))

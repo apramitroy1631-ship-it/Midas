@@ -19,7 +19,10 @@ class Settings(BaseSettings):
     anthropic_model_default: str = "claude-sonnet-5"
 
     gemini_api_key: str = ""
-    gemini_model_default: str = "gemini-1.5-flash"
+    gemini_model_default: str = "gemini-flash-latest"
+
+    groq_api_key: str = ""
+    groq_model_default: str = "openai/gpt-oss-120b"
 
     llm_provider: str = "openai"  # fallback when an agent is not in AGENT_MODEL_MAP
     ollama_base_url: str = "http://localhost:11434/v1"

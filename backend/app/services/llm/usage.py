@@ -19,8 +19,10 @@ PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.00, 25.00),
     "claude-sonnet-5": (3.00, 15.00),
     "claude-haiku-4-5-20251001": (1.00, 5.00),
-    "gemini-1.5-pro": (1.25, 5.00),
-    "gemini-1.5-flash": (0.075, 0.30),
+    "gemini-pro-latest": (1.25, 10.00),
+    "gemini-flash-latest": (0.30, 2.50),
+    "openai/gpt-oss-120b": (0.15, 0.60),
+    "openai/gpt-oss-20b": (0.075, 0.30),
 }
 _FALLBACK_PRICE = (1.00, 3.00)
 
