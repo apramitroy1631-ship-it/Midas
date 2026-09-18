@@ -52,6 +52,7 @@ export function Connect({
         apiKey: body.session_token,
         baseUrl: baseUrl.trim(),
         userEmail: body.email,
+        role: body.role,
       });
       store.setActive(saved.id);
       onConnected(saved);
@@ -74,7 +75,12 @@ export function Connect({
     };
     try {
       const tenant = await api.me(candidate);
-      const saved = store.save({ label: tenant.name, apiKey: candidate.apiKey, baseUrl: candidate.baseUrl });
+      const saved = store.save({
+        label: tenant.name,
+        apiKey: candidate.apiKey,
+        baseUrl: candidate.baseUrl,
+        role: "admin", // a raw tenant key already grants full tenant access
+      });
       store.setActive(saved.id);
       onConnected(saved);
     } catch (err) {

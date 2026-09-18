@@ -51,6 +51,15 @@ def resolve_tenant_id(token: str) -> str | None:
     return doc["tenant_id"]
 
 
+def resolve_user_id(token: str) -> str | None:
+    doc = raw("sessions").find_one({"token_hash": _hash(token)})
+    if not doc:
+        return None
+    if doc["expires_at"] < utcnow():
+        return None
+    return doc["user_id"]
+
+
 def revoke(token: str) -> bool:
     result = raw("sessions").delete_one({"token_hash": _hash(token)})
     return result.deleted_count > 0

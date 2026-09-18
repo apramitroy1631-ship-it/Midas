@@ -9,6 +9,7 @@ import type {
   Schedule,
   RunSummary,
   Stats,
+  TeamMember,
   Tenant,
 } from "./types";
 
@@ -88,6 +89,19 @@ export const api = {
       "/v1/autopilot/tick",
       { method: "POST" }
     ),
+
+  team: (c: Connection) => request<TeamMember[]>(c, "/v1/auth/team"),
+  inviteTeammate: (c: Connection, body: { email: string; password: string; phone?: string; role?: string }) =>
+    request<TeamMember>(c, "/v1/auth/team", { method: "POST", body: JSON.stringify(body) }),
+  setTeammateRole: (c: Connection, userId: string, role: string) =>
+    request<TeamMember>(c, `/v1/auth/team/${userId}`, { method: "PATCH", body: JSON.stringify({ role }) }),
+  removeTeammate: (c: Connection, userId: string) =>
+    request<void>(c, `/v1/auth/team/${userId}`, { method: "DELETE" }),
+  changePassword: (c: Connection, currentPassword: string, newPassword: string) =>
+    request<{ ok: boolean }>(c, "/v1/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
 
   health: (baseUrl: string) =>
     fetch(baseUrl.replace(/\/$/, "") + "/health").then((r) => r.json()),

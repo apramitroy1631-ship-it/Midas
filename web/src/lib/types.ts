@@ -177,4 +177,16 @@ export interface Connection {
   color: string;
   /** Only set when connected via email/password sign-in, not the raw API key fallback. */
   userEmail?: string;
+  /** "admin" can manage teammates; a raw tenant API key is treated as admin
+   * too, since it already grants full tenant access. */
+  role?: string;
+}
+
+export interface TeamMember {
+  id: string;
+  tenant_id: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  created_at: string;
 }

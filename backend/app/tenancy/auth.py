@@ -9,6 +9,7 @@ from fastapi import Depends, Header, HTTPException, Request
 from app.core.settings import settings
 from app.db import sessions as session_repo
 from app.db import tenants as tenant_repo
+from app.db import users as user_repo
 from app.tenancy.context import set_tenant
 
 
@@ -49,5 +50,28 @@ async def require_admin(x_admin_key: str = Header(default="")) -> None:
         raise HTTPException(status_code=401, detail="Invalid or missing X-Admin-Key.")
 
 
+async def require_tenant_admin(
+    request: Request, x_api_key: str = Header(default="")
+) -> dict[str, Any]:
+    """Like require_tenant, but only lets through a tenant admin - for
+    managing teammates without ever handing out the platform X-Admin-Key.
+
+    A raw tenant service key (bx_live_...) already grants full access to
+    everything in the tenant, so it counts as admin here too; only a
+    personal login session needs its own role checked, since that's the
+    credential an individual teammate actually holds.
+    """
+    tenant = await require_tenant(request, x_api_key)
+
+    if x_api_key.startswith(session_repo.PREFIX):
+        user_id = session_repo.resolve_user_id(x_api_key)
+        user = user_repo.get(user_id) if user_id else None
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required.")
+
+    return tenant
+
+
 TenantDep = Depends(require_tenant)
 AdminDep = Depends(require_admin)
+TenantAdminDep = Depends(require_tenant_admin)

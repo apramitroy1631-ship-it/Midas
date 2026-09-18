@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { Badge, Card, Empty, Field, ToggleRow } from "../components/ui";
 import { api } from "../lib/api";
-import type { AutopilotConfig, Brand, Connection, LogEntry, Tenant } from "../lib/types";
+import type { AutopilotConfig, Brand, Connection, LogEntry, TeamMember, Tenant } from "../lib/types";
 
 const LEVEL_TONE: Record<string, "ok" | "warn" | "danger" | "info" | "muted"> = {
   DEBUG: "muted",
@@ -132,6 +132,191 @@ function DeveloperLogs({ conn }: { conn: Connection }) {
             </tbody>
           </table>
         </div>
+      )}
+    </Card>
+  );
+}
+
+function Team({ conn }: { conn: Connection }) {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"member" | "admin">("member");
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+
+  const load = useMemo(
+    () => async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        setMembers(await api.team(conn));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [conn]
+  );
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function invite() {
+    if (!email.trim() || password.length < 8) return;
+    setInviting(true);
+    setInviteError(null);
+    try {
+      await api.inviteTeammate(conn, { email: email.trim(), password, role });
+      setEmail("");
+      setPassword("");
+      setRole("member");
+      setInviteOpen(false);
+      void load();
+    } catch (err) {
+      setInviteError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function toggleRole(m: TeamMember) {
+    await api.setTeammateRole(conn, m.id, m.role === "admin" ? "member" : "admin");
+    void load();
+  }
+
+  async function remove(m: TeamMember) {
+    if (!confirm(`Remove ${m.email} from this tenant? They won't be able to sign in anymore.`)) return;
+    await api.removeTeammate(conn, m.id);
+    void load();
+  }
+
+  return (
+    <Card
+      title="Team"
+      sub="Who can sign in, and who can manage teammates"
+      action={
+        <button className="btn ghost sm" onClick={() => setInviteOpen((o) => !o)}>
+          {inviteOpen ? "Cancel" : "+ Add teammate"}
+        </button>
+      }
+    >
+      {inviteOpen && (
+        <div className="col gap-sm" style={{ marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--border-soft)" }}>
+          <div className="row wrap">
+            <input
+              className="input"
+              style={{ maxWidth: 260 }}
+              placeholder="teammate@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              className="input"
+              style={{ maxWidth: 200 }}
+              type="password"
+              placeholder="Temporary password (8+ chars)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <select className="select" style={{ width: 130 }} value={role} onChange={(e) => setRole(e.target.value as "member" | "admin")}>
+              <option value="member">Member</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button className="btn primary sm" onClick={invite} disabled={inviting || !email.trim() || password.length < 8}>
+              {inviting ? "Adding…" : "Add"}
+            </button>
+          </div>
+          {inviteError && <div className="banner danger" style={{ margin: 0 }}><span>✕</span><div>{inviteError}</div></div>}
+          <p className="dim" style={{ fontSize: 11, margin: 0 }}>
+            They sign in with this email and password — share it with them directly, then they can change it
+            themselves from here once logged in.
+          </p>
+        </div>
+      )}
+
+      {error && <div className="banner danger" style={{ marginBottom: 12 }}><span>✕</span><div>{error}</div></div>}
+
+      {!error && !loading && members.length === 0 ? (
+        <Empty icon="◌" title="No teammates yet" text="Add one above." />
+      ) : (
+        <div className="col gap-sm">
+          {members.map((m) => (
+            <div key={m.id} className="row wrap" style={{ fontSize: 12.5, alignItems: "center" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{m.email}</div>
+                <div className="dim mono" style={{ fontSize: 11 }}>joined {new Date(m.created_at).toLocaleDateString()}</div>
+              </div>
+              <Badge tone={m.role === "admin" ? "info" : "muted"}>{m.role}</Badge>
+              <button className="btn ghost sm" onClick={() => void toggleRole(m)}>
+                {m.role === "admin" ? "Make member" : "Make admin"}
+              </button>
+              <button className="btn danger ghost sm" onClick={() => void remove(m)}>Remove</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function ChangePassword({ conn }: { conn: Connection }) {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [msgTone, setMsgTone] = useState<"ok" | "danger">("ok");
+
+  async function save() {
+    setSaving(true);
+    setMsg(null);
+    try {
+      await api.changePassword(conn, current, next);
+      setCurrent("");
+      setNext("");
+      setMsgTone("ok");
+      setMsg("Password changed.");
+    } catch (err) {
+      setMsgTone("danger");
+      setMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card title="Change password" sub="Applies to your own login">
+      <div className="row wrap">
+        <input
+          className="input"
+          style={{ maxWidth: 220 }}
+          type="password"
+          placeholder="Current password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+        <input
+          className="input"
+          style={{ maxWidth: 220 }}
+          type="password"
+          placeholder="New password (8+ chars)"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+        />
+        <button className="btn primary sm" onClick={save} disabled={saving || !current || next.length < 8}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+      {msg && (
+        <p className={msgTone === "ok" ? "dim" : ""} style={{ fontSize: 12, marginTop: 10, marginBottom: 0, color: msgTone === "danger" ? "var(--danger)" : undefined }}>
+          {msg}
+        </p>
       )}
     </Card>
   );
@@ -284,6 +469,10 @@ export function Settings({
           {saving ? "Saving…" : "Save settings"}
         </button>
       </div>
+
+      {conn.role === "admin" && <Team conn={conn} />}
+
+      {conn.userEmail && <ChangePassword conn={conn} />}
 
       <Card title="Connection" sub="This browser only">
         <dl className="kv" style={{ fontSize: 12.5 }}>
