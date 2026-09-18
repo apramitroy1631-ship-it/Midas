@@ -107,6 +107,26 @@ class Competitor(BaseModel):
     )
 
 
+class MarketFacts(BaseModel):
+    """Durable market research for a brand — audience, sizing, competitors.
+
+    Reused across runs instead of re-deriving the same analysis from scratch
+    every time. Written by the Learning agent, read by the Research agent.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    target_audience: str = Field(default="", description="The brand's confirmed audience profile.")
+    market_size: str = Field(default="", description="Confirmed TAM in USD millions, e.g. '186000' for $186B.")
+    growth_rate: str = Field(default="", description="Confirmed annual CAGR percentage, e.g. '14.5'.")
+    competitors: list["Competitor"] = Field(
+        default_factory=list, description="Confirmed competitors and their positioning gaps."
+    )
+    researched_at: str = Field(
+        default="", description="ISO date these facts were last confirmed or updated. Empty if never set."
+    )
+
+
 class ResearchOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -352,4 +372,13 @@ class LearningOutput(BaseModel):
     next_goal_suggestion: str = Field(
         ...,
         description="The single highest-leverage campaign goal this brand should pursue next, and one line on why.",
+    )
+    market_facts: MarketFacts = Field(
+        ...,
+        description=(
+            "The brand's durable market facts. If EXISTING MARKET FACTS were provided and this run's "
+            "research did not materially change them, return them UNCHANGED (including the original "
+            "researched_at date). If this run's research meaningfully corrected or updated them (or none "
+            "existed yet), return the new values with researched_at set to today."
+        ),
     )

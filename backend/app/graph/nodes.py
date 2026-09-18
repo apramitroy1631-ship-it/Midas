@@ -237,6 +237,7 @@ def learn_node(state: RunState) -> dict:
     result = LearningAgent(_overrides(state)).run(
         brand_context=state["brand_context"],
         plan=state.get("plan") or {},
+        research=state.get("research") or {},
         strategy=state.get("strategy") or {},
         content=state.get("content") or {},
         qa_report=state.get("qa_report") or {},
@@ -261,6 +262,10 @@ def learn_node(state: RunState) -> dict:
         _extend("winning_angles", learning.get("winning_angles") or [], 30)
         _extend("exhausted_angles", learning.get("exhausted_angles") or [], 40)
         _extend("past_campaigns", [plan.get("goal", "")] if plan.get("goal") else [], 50)
+
+        market_facts = learning.get("market_facts")
+        if market_facts:
+            memory["market_facts"] = market_facts
 
         brands_coll.update({"_id": state.get("brand_id")}, {"memory": memory})
         logger.info("learn | brand memory updated | brand=%s", state.get("brand_id"))

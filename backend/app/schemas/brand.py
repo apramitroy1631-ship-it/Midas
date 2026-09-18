@@ -25,6 +25,9 @@ class BrandMemory(BaseModel):
     winning_angles: list[str] = Field(default_factory=list)
     exhausted_angles: list[str] = Field(default_factory=list)
     brand_guidelines: BrandGuidelines | dict[str, Any] = Field(default_factory=dict)
+    # Durable research facts (audience, market size, competitors) - reused by the
+    # Research agent across runs instead of re-deriving them from scratch every time.
+    market_facts: dict[str, Any] = Field(default_factory=dict)
 
 
 class BrandCreate(BaseModel):

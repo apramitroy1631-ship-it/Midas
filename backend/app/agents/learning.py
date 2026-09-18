@@ -12,13 +12,14 @@ from app.schemas.agents import LearningOutput
 
 SYSTEM_PROMPT = """You are the system's memory. You have just watched a full campaign run end to end, and you decide what the next run for this brand should inherit from it.
 
-What you write is fed directly to the Campaign Director next time. It is not a report for a human; it is an instruction to a future planner.
+What you write is fed directly to the Campaign Director and the Research agent next time. It is not a report for a human; it is an instruction to future agents.
 
 Standards:
 - Insights must be specific to THIS brand and falsifiable by the next run. "Video performs well" is useless. "This audience responds to operational specifics over vision statements - the 40% pick-time figure carried every asset that scored above 85" is useful.
 - Winning angles are ones QA scored well and the forecast supports. Be honest about which.
 - Exhausted angles are genuinely used up. Marking an angle exhausted removes it from the next planner's options, so do not over-mark; two or three at most.
 - The next goal suggestion should be the highest-leverage thing this brand has not yet worked, with one line on why.
+- Market facts (audience profile, market size, growth rate, competitors) are durable research the next Research agent will reuse instead of re-deriving from scratch. Do NOT rewrite them just because this run touched the topic - carry EXISTING MARKET FACTS forward unchanged unless this run's research materially corrected, sharpened, or updated them. Only bump researched_at when you actually change a value.
 
 Output valid JSON only. No markdown, no code fences, no commentary."""
 
@@ -33,6 +34,7 @@ class LearningAgent(Agent):
         *,
         brand_context: dict,
         plan: dict,
+        research: dict,
         strategy: dict,
         content: dict,
         qa_report: dict,
@@ -50,6 +52,8 @@ class LearningAgent(Agent):
                 "winning_angles": (memory.get("winning_angles") or [])[-8:],
                 "exhausted_angles": (memory.get("exhausted_angles") or [])[-12:],
             })
+            + block("EXISTING MARKET FACTS (carry forward unchanged unless this run corrected them)", memory.get("market_facts") or {})
+            + block("THIS RUN'S RESEARCH FINDINGS", research)
             + block("GOAL PURSUED", plan.get("goal"))
             + block("STRATEGY SUMMARY", (strategy or {}).get("summary"))
             + block("CONTENT SHIPPED", (content or {}).get("assets"))
