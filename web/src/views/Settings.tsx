@@ -1,7 +1,141 @@
-import { useState } from "react";
-import { Badge, Card, Field, ToggleRow } from "../components/ui";
+import { useEffect, useMemo, useState } from "react";
+import { DateRangePicker } from "../components/DateRangePicker";
+import { Badge, Card, Empty, Field, ToggleRow } from "../components/ui";
 import { api } from "../lib/api";
-import type { AutopilotConfig, Brand, Connection, Tenant } from "../lib/types";
+import type { AutopilotConfig, Brand, Connection, LogEntry, Tenant } from "../lib/types";
+
+const LEVEL_TONE: Record<string, "ok" | "warn" | "danger" | "info" | "muted"> = {
+  DEBUG: "muted",
+  INFO: "info",
+  WARNING: "warn",
+  ERROR: "danger",
+  CRITICAL: "danger",
+};
+
+function DeveloperLogs({ conn }: { conn: Connection }) {
+  const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [levels, setLevels] = useState<string[]>([]);
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [activeLevels, setActiveLevels] = useState<string[]>([]);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleIn(list: string[], setList: (v: string[]) => void, value: string) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
+
+  const load = useMemo(
+    () => async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.logs(conn, {
+          category: activeCategories,
+          level: activeLevels,
+          since: from ? new Date(from).toISOString() : undefined,
+          until: to ? new Date(new Date(to).getTime() + 86_400_000 - 1).toISOString() : undefined,
+        });
+        setEntries(res.entries);
+        setCategories(res.categories);
+        setLevels(res.levels);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [conn, activeCategories, activeLevels, from, to]
+  );
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const anyFilterActive = !!(activeCategories.length || activeLevels.length || from || to);
+
+  return (
+    <Card
+      title="Developer logs"
+      sub="Live application log stream, most recent first"
+      action={
+        <button className="btn ghost sm" onClick={() => void load()} disabled={loading}>
+          {loading ? "Loading…" : "Refresh"}
+        </button>
+      }
+    >
+      <div className="row wrap" style={{ marginBottom: 12 }}>
+        <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
+      </div>
+      <div className="row wrap" style={{ marginBottom: 12 }}>
+        <span className="field-label" style={{ margin: 0, alignSelf: "center" }}>Type</span>
+        {levels.map((lv) => (
+          <button
+            key={lv}
+            type="button"
+            className={"chip-toggle" + (activeLevels.includes(lv) ? " active" : "")}
+            onClick={() => toggleIn(activeLevels, setActiveLevels, lv)}
+          >
+            {lv}
+          </button>
+        ))}
+        <span className="field-label" style={{ margin: "0 0 0 10px", alignSelf: "center" }}>Category</span>
+        {categories.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={"chip-toggle" + (activeCategories.includes(c) ? " active" : "")}
+            onClick={() => toggleIn(activeCategories, setActiveCategories, c)}
+          >
+            {c}
+          </button>
+        ))}
+        <span className="spacer" />
+        {anyFilterActive && (
+          <button
+            className="btn ghost sm"
+            onClick={() => { setActiveCategories([]); setActiveLevels([]); setFrom(""); setTo(""); }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {error && <div className="banner danger"><span>✕</span><div>{error}</div></div>}
+
+      {!error && entries.length === 0 ? (
+        <Empty icon="▤" title={loading ? "Loading…" : "No log entries"} text="Nothing has been logged yet for this filter." />
+      ) : (
+        <div className="table-wrap" style={{ maxHeight: 420, overflowY: "auto" }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} style={{ cursor: "default" }}>
+                  <td className="mono dim" style={{ whiteSpace: "nowrap" }}>
+                    {new Date(e.created_at).toLocaleString()}
+                  </td>
+                  <td><Badge tone={LEVEL_TONE[e.level] ?? "muted"}>{e.level}</Badge></td>
+                  <td className="mono dim">{e.category}</td>
+                  <td className="truncate" style={{ maxWidth: 480 }}>{e.message}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 export function Settings({
   conn,
@@ -190,6 +324,8 @@ export function Settings({
           Another tenant's brands, runs, and assets are unreachable with it.
         </p>
       </Card>
+
+      <DeveloperLogs conn={conn} />
     </div>
   );
 }
