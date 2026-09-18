@@ -144,6 +144,30 @@ export interface StepEvent {
   elapsed_ms: number;
 }
 
+export interface LogEntry {
+  id: string;
+  created_at: string;
+  category: string;
+  level: string;
+  message: string;
+}
+
+export interface Schedule {
+  id: string;
+  brand_id: string;
+  brand_name: string;
+  goal: string | null;
+  target_audience: string | null;
+  budget: number;
+  channels: string[] | null;
+  start_date: string;
+  end_date: string;
+  weekdays: number[];
+  active: boolean;
+  last_run_date: string | null;
+  created_at: string;
+}
+
 /** A saved connection to one tenant. Keys live only in this browser. */
 export interface Connection {
   id: string;

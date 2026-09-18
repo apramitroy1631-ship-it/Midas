@@ -4,7 +4,9 @@ import type {
   AutopilotConfig,
   Brand,
   Connection,
+  LogEntry,
   RunDetail,
+  Schedule,
   RunSummary,
   Stats,
   Tenant,
@@ -66,6 +68,15 @@ export const api = {
     request<Asset[]>(c, "/v1/assets" + (brandId ? `?brand_id=${brandId}` : "")),
   updateAsset: (c: Connection, id: string, body: unknown) =>
     request<Asset>(c, `/v1/assets/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  regenerateAsset: (c: Connection, id: string, feedback: string) =>
+    request<Asset>(c, `/v1/assets/${id}/regenerate`, { method: "POST", body: JSON.stringify({ feedback }) }),
+  deleteAsset: (c: Connection, id: string) =>
+    request<void>(c, `/v1/assets/${id}`, { method: "DELETE" }),
+  bulkDeleteAssets: (c: Connection, ids: string[]) =>
+    request<{ deleted: number; requested: number }>(c, "/v1/assets/bulk-delete", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
 
   audit: (c: Connection) => request<AuditEntry[]>(c, "/v1/audit"),
   stats: (c: Connection) => request<Stats>(c, "/v1/stats"),
@@ -80,6 +91,27 @@ export const api = {
 
   health: (baseUrl: string) =>
     fetch(baseUrl.replace(/\/$/, "") + "/health").then((r) => r.json()),
+
+  schedules: (c: Connection) => request<Schedule[]>(c, "/v1/schedules"),
+  createSchedule: (c: Connection, body: unknown) =>
+    request<Schedule>(c, "/v1/schedules", { method: "POST", body: JSON.stringify(body) }),
+  deleteSchedule: (c: Connection, id: string) =>
+    request<void>(c, `/v1/schedules/${id}`, { method: "DELETE" }),
+  setScheduleActive: (c: Connection, id: string, active: boolean) =>
+    request<Schedule>(c, `/v1/schedules/${id}`, { method: "PATCH", body: JSON.stringify({ active }) }),
+
+  logs: (c: Connection, params: { category?: string[]; level?: string[]; since?: string; until?: string } = {}) => {
+    const qs = new URLSearchParams();
+    (params.category ?? []).forEach((v) => qs.append("category", v));
+    (params.level ?? []).forEach((v) => qs.append("level", v));
+    if (params.since) qs.set("since", params.since);
+    if (params.until) qs.set("until", params.until);
+    const q = qs.toString();
+    return request<{ entries: LogEntry[]; categories: string[]; levels: string[] }>(
+      c,
+      "/v1/logs" + (q ? `?${q}` : "")
+    );
+  },
 };
 
 /**
