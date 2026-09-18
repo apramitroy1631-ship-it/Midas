@@ -41,7 +41,11 @@ export function ContentCalendar({
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [popover, setPopover] = useState<{ key: string; day: Date; top: number; left: number } | null>(null);
+  type Popover = { key: string; day: Date; left: number } & (
+    | { top: number; bottom?: undefined }
+    | { bottom: number; top?: undefined }
+  );
+  const [popover, setPopover] = useState<Popover | null>(null);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -76,10 +80,23 @@ export function ContentCalendar({
 
   function openDay(e: MouseEvent<HTMLButtonElement>, d: Date) {
     const btn = e.currentTarget;
-    const top = btn.offsetTop + btn.offsetHeight + 6;
+    const bodyHeight = bodyRef.current?.clientHeight ?? 0;
     const left = Math.min(btn.offsetLeft, (bodyRef.current?.clientWidth ?? 400) - 260);
     const key = dateKey(d);
-    setPopover((p) => (p?.key === key ? null : { key, day: d, top, left: Math.max(0, left) }));
+
+    // A cell in the lower half of the grid would push the popover well past
+    // the card and over whatever sits below it on the page (e.g. the stat
+    // cards) — for those, anchor the popover's bottom to just above the cell
+    // instead, so it opens upward and always stays within the card.
+    const opensUpward = btn.offsetTop > bodyHeight / 2;
+
+    setPopover((p) =>
+      p?.key === key
+        ? null
+        : opensUpward
+        ? { key, day: d, bottom: bodyHeight - btn.offsetTop + 6, left: Math.max(0, left) }
+        : { key, day: d, top: btn.offsetTop + btn.offsetHeight + 6, left: Math.max(0, left) }
+    );
   }
 
   const popoverAssets = popover ? byDay.get(popover.key) ?? [] : [];
@@ -88,6 +105,7 @@ export function ContentCalendar({
     <Card
       title="Content calendar"
       sub="What's published, and what to make next"
+      className="cal-card"
       action={
         <div className="row gap-sm">
           <button className="btn ghost sm" onClick={() => { setCursor(new Date(year, month - 1, 1)); setPopover(null); }}>‹</button>
@@ -134,7 +152,14 @@ export function ContentCalendar({
         {popover && (
           <>
             <div className="cal-backdrop" onClick={() => setPopover(null)} />
-            <div className="cal-popover" style={{ top: popover.top, left: popover.left }}>
+            <div
+              className="cal-popover"
+              style={
+                popover.bottom !== undefined
+                  ? { bottom: popover.bottom, left: popover.left }
+                  : { top: popover.top, left: popover.left }
+              }
+            >
               <div className="cal-popover-title">
                 {popover.day.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
               </div>
