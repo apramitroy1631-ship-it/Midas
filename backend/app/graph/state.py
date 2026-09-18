@@ -41,6 +41,11 @@ class RunState(TypedDict, total=False):
     max_revisions: int
     dropped_channels: list[str]
 
+    # True when every planned channel is "light" (e.g. linkedin, email) and
+    # none need deep research (e.g. blog) - skips the research step and the
+    # tool-calling ReAct loop in strategy/content for a much faster run.
+    light_mode: bool
+
     # outcome
     status: str
     published_asset_ids: list[str]

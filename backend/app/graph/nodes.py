@@ -35,6 +35,14 @@ def _overrides(state: RunState) -> dict:
 # ---------------------------------------------------------------------------
 
 
+# Channels that justify the full research + tool-calling pipeline. Anything
+# not in this set (linkedin, email, ...) is fast-tracked: no research step,
+# no ReAct tool loop in strategy/content - brand memory already in context
+# is the "history check" for these, matching how fast a short-form post
+# should be versus a blog post that needs real market grounding.
+DEEP_RESEARCH_CHANNELS = {"blog"}
+
+
 def orchestrate_node(state: RunState) -> dict:
     plan = OrchestratorAgent(_overrides(state)).run(
         brand_context=state["brand_context"],
@@ -44,7 +52,12 @@ def orchestrate_node(state: RunState) -> dict:
         budget=state.get("budget", 0.0),
         policy=state.get("policy", {}),
     )
-    return {"plan": plan.model_dump(), "status": "planning"}
+    plan_dict = plan.model_dump()
+    planned_channels = {(c.get("channel") or "").strip().lower() for c in plan_dict.get("channels") or []}
+    light_mode = not (planned_channels & DEEP_RESEARCH_CHANNELS)
+    if light_mode:
+        logger.info("orchestrate | light mode | channels=%s", sorted(planned_channels))
+    return {"plan": plan_dict, "status": "planning", "light_mode": light_mode}
 
 
 def research_node(state: RunState) -> dict:
@@ -62,6 +75,7 @@ def strategy_node(state: RunState) -> dict:
         plan=state.get("plan") or {},
         research=state.get("research") or {},
         budget=state.get("budget", 0.0),
+        use_tools=not state.get("light_mode", False),
     )
     return {"strategy": result.model_dump(), "status": "strategising"}
 
@@ -77,6 +91,7 @@ def content_node(state: RunState) -> dict:
         previous_content=state.get("content"),
         qa_report=state.get("qa_report"),
         revision=revision,
+        use_tools=not state.get("light_mode", False),
     )
     return {"content": result.model_dump(), "status": "writing"}
 

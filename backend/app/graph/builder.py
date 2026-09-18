@@ -1,19 +1,25 @@
 # app/graph/builder.py
 """The autonomous campaign graph.
 
-    orchestrate -> research -> strategy -> content -> seo -> qa
-                                   ^                          |
-                                   |                          v
-                                revise <---- (critical issues, budget left)
-                                                              |
-                                              (clean) --------+--> publish -> analytics -> learn -> END
-                                                              |
-                                       (still failing, budget spent) --> arbitrate --> publish | END
+    orchestrate -> [research] -> strategy -> content -> seo -> qa
+        |              ^                        ^                |
+        | (light mode: skip research)           |                v
+        +----------------------------------> revise <---- (critical issues, budget left)
+                                                                  |
+                                                  (clean) --------+--> publish -> analytics -> learn -> END
+                                                                  |
+                                           (still failing, budget spent) --> arbitrate --> publish | END
 
 The loop back through `revise` is what makes this run unattended: a QA failure
 feeds the specific issues back to the writer instead of parking the run in a
 review queue. `arbitrate` is the floor - it guarantees the graph terminates
 even if the writer never satisfies QA.
+
+`light_mode` (set by orchestrate, based on which channels were planned) skips
+the research node entirely and drops the tool-calling ReAct loop from
+strategy/content - a short-form run (linkedin, email) doesn't need the same
+grounding a blog post does, and paying for it anyway was most of why simple
+runs were taking minutes instead of seconds.
 """
 from __future__ import annotations
 
@@ -61,6 +67,13 @@ def _after_arbitrate(state: RunState) -> str:
     return END if state.get("status") == "abandoned" else "publish"
 
 
+def _after_orchestrate(state: RunState) -> str:
+    if state.get("light_mode"):
+        logger.info("orchestrate router | light mode -> strategy (skipping research)")
+        return "strategy"
+    return "research"
+
+
 def build_campaign_graph():
     graph = StateGraph(RunState)
 
@@ -77,7 +90,9 @@ def build_campaign_graph():
     graph.add_node("learn", learn_node)
 
     graph.set_entry_point("orchestrate")
-    graph.add_edge("orchestrate", "research")
+    graph.add_conditional_edges(
+        "orchestrate", _after_orchestrate, {"research": "research", "strategy": "strategy"}
+    )
     graph.add_edge("research", "strategy")
     graph.add_edge("strategy", "content")
     graph.add_edge("content", "seo")

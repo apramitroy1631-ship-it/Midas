@@ -35,11 +35,11 @@ class Agent:
     def build_prompt(self, **kwargs: Any) -> str:  # pragma: no cover - overridden
         raise NotImplementedError
 
-    def run(self, **kwargs: Any) -> BaseModel:
+    def run(self, *, use_tools: bool = True, **kwargs: Any) -> BaseModel:
         prompt = self.build_prompt(**kwargs)
         logger.info("%s | start", self.name)
         with attributed_to(self.name):
-            if self.tools:
+            if self.tools and use_tools:
                 result = self._llm.generate_with_tools(
                     system_prompt=self.system_prompt,
                     user_prompt=prompt,
