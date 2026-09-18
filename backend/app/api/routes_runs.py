@@ -12,7 +12,8 @@ from app.db.scoped import assets as assets_coll
 from app.db.scoped import audit as audit_coll
 from app.db.scoped import runs as runs_coll
 from app.graph.runner import RunError, stream_run
-from app.schemas.run import AssetResponse, AssetUpdate, RunDetail, RunRequest, RunSummary
+from app.schemas.run import AssetRegenerateRequest, AssetResponse, AssetUpdate, RunDetail, RunRequest, RunSummary
+from app.services.regenerate import regenerate_asset
 from app.tenancy.auth import require_tenant
 
 router = APIRouter(prefix="/v1", tags=["Runs"], dependencies=[Depends(require_tenant)])
@@ -107,6 +108,34 @@ def update_asset(asset_id: str, payload: AssetUpdate) -> Any:
     if doc is None:
         raise HTTPException(status_code=404, detail="Asset not found.")
     return AssetResponse(**_summary(doc))
+
+
+@router.post("/assets/{asset_id}/regenerate", response_model=AssetResponse)
+def regenerate_asset_route(
+    asset_id: str, payload: AssetRegenerateRequest, tenant: dict = Depends(require_tenant)
+) -> Any:
+    """Targeted fix for one asset from operator feedback - not a new run.
+
+    Reuses the original run's plan/research/strategy and re-invokes only the
+    Content agent, so it's a fraction of the time and cost of a full run.
+    """
+    if not payload.feedback.strip():
+        raise HTTPException(status_code=400, detail="Feedback can't be empty.")
+
+    asset = assets_coll.find_one({"_id": asset_id})
+    if asset is None:
+        raise HTTPException(status_code=404, detail="Asset not found.")
+
+    run = runs_coll.find_one({"_id": asset.get("run_id")})
+    if run is None:
+        raise HTTPException(status_code=404, detail="The original run for this asset no longer exists.")
+
+    blocked = tenant_repo.quota_exceeded(tenant)
+    if blocked:
+        raise HTTPException(status_code=429, detail=blocked)
+
+    updated = regenerate_asset(asset=asset, run=run, tenant=tenant, feedback=payload.feedback.strip())
+    return AssetResponse(**_summary(updated))
 
 
 @router.delete("/assets/{asset_id}", status_code=204)

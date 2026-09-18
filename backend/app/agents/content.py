@@ -21,6 +21,8 @@ Standards:
 
 REVISION PASSES: when you are given QA issues, you are not writing fresh. Fix exactly what was flagged, keep what was working, and record in revision_notes which change addresses which issue. Do not silently rewrite assets that were not flagged.
 
+REGENERATE PASSES: when you are given operator feedback instead of QA issues, the operator reviewed your previous draft and told you specifically what's wrong. Address exactly what they said - do not produce a generic rewrite that ignores their actual complaint.
+
 Output valid JSON only. No markdown, no code fences, no commentary."""
 
 
@@ -42,6 +44,8 @@ class ContentAgent(Agent):
         previous_content: dict | None = None,
         qa_report: dict | None = None,
         revision: int = 0,
+        operator_feedback: str | None = None,
+        only_channel: str | None = None,
         **_: object,
     ) -> str:
         if revision and qa_report:
@@ -58,9 +62,29 @@ class ContentAgent(Agent):
                 + block("QA VERDICT", qa_report.get("verdict"))
                 + block("YOUR PREVIOUS DRAFT", previous_content)
             )
+        elif operator_feedback:
+            header = (
+                "REGENERATE PASS. The operator reviewed your previous draft and was not happy with it.\n"
+                "Address their feedback directly - do not just produce a different generic draft."
+            )
+            feedback = (
+                block("OPERATOR FEEDBACK - MUST BE ADDRESSED", operator_feedback)
+                + block("YOUR PREVIOUS DRAFT", previous_content)
+            )
         else:
             header = "Write the campaign content."
             feedback = ""
+
+        channel_scope = (
+            block("ONLY REGENERATE THIS CHANNEL - produce exactly one asset, for this channel only", only_channel)
+            if only_channel
+            else ""
+        )
+        closing = (
+            "\nProduce the content as a single JSON object with exactly one asset, for the channel above."
+            if only_channel
+            else "\nProduce the content as a single JSON object, one asset per strategy channel."
+        )
 
         return (
             header
@@ -71,6 +95,7 @@ class ContentAgent(Agent):
             + block("STRATEGY", strategy)
             + block("KEY RESEARCH INSIGHTS", (research or {}).get("key_insights"))
             + block("HARD POLICY CONSTRAINTS (violating any of these fails QA)", policy)
+            + channel_scope
             + feedback
-            + "\nProduce the content as a single JSON object, one asset per strategy channel."
+            + closing
         ).strip()

@@ -72,3 +72,9 @@ class AssetUpdate(BaseModel):
     headline: str | None = None
     body: str | None = None
     call_to_action: str | None = None
+
+
+class AssetRegenerateRequest(BaseModel):
+    """Operator feedback driving a targeted content fix - not a new run."""
+
+    feedback: str
