@@ -22,12 +22,17 @@ os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
 from app.api.routes_auth import router as auth_router  # noqa: E402
 from app.api.routes_autopilot import router as autopilot_router  # noqa: E402
 from app.api.routes_brands import router as brands_router  # noqa: E402
+from app.api.routes_logs import router as logs_router  # noqa: E402
 from app.api.routes_runs import router as runs_router  # noqa: E402
+from app.api.routes_schedules import router as schedules_router  # noqa: E402
 from app.api.routes_tenants import admin_router, router as tenant_router  # noqa: E402
+from app.core.log_capture import start_log_capture  # noqa: E402
 from app.db.mongo import ensure_indexes  # noqa: E402
 from app.services.autopilot import scheduler_loop  # noqa: E402
+from app.services.scheduled_campaigns import scheduler_loop as schedules_scheduler_loop  # noqa: E402
 
 setup_logging()
+start_log_capture()
 logger = logging.getLogger("main")
 
 
@@ -44,14 +49,20 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("autopilot | disabled by AUTOPILOT_ENABLED=false")
 
+    # Per-campaign scheduling (date range + weekdays, set from New Campaign) is
+    # independent of the tenant-wide autopilot toggle above - it only ever runs
+    # what an operator explicitly scheduled, so it's always on.
+    schedules_task = asyncio.create_task(schedules_scheduler_loop(), name="schedules-scheduler")
+
     yield
 
-    if task is not None:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    for t in (task, schedules_task):
+        if t is not None:
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 app = FastAPI(
@@ -80,6 +91,8 @@ app.include_router(tenant_router)
 app.include_router(brands_router)
 app.include_router(runs_router)
 app.include_router(autopilot_router)
+app.include_router(logs_router)
+app.include_router(schedules_router)
 
 
 @app.get("/health", tags=["Meta"])

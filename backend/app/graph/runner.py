@@ -317,6 +317,7 @@ def run_sync(
     tenant: dict[str, Any],
     goal: str | None = None,
     audience: str | None = None,
+    channels: list[str] | None = None,
     budget: float = 5000.0,
     trigger: str = "autopilot",
 ) -> dict[str, Any]:
@@ -331,6 +332,7 @@ def run_sync(
             brand=brand,
             goal=goal,
             audience=audience,
+            channels=channels,
             budget=budget,
             trigger=trigger,
             max_revisions=int(policy.get("max_revision_cycles", 2)),
