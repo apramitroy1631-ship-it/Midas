@@ -109,6 +109,22 @@ def update_asset(asset_id: str, payload: AssetUpdate) -> Any:
     return AssetResponse(**_summary(doc))
 
 
+@router.delete("/assets/{asset_id}", status_code=204)
+def delete_asset(asset_id: str) -> None:
+    if not assets_coll.delete({"_id": asset_id}):
+        raise HTTPException(status_code=404, detail="Asset not found.")
+
+
+@router.post("/assets/bulk-delete")
+def bulk_delete_assets(payload: dict[str, list[str]]) -> Any:
+    """`{"ids": [...]}` — deletes whichever of those ids belong to this
+    tenant (ScopedCollection can't touch anyone else's) and reports how
+    many actually existed, since a stale id in the list isn't an error."""
+    ids = payload.get("ids") or []
+    deleted = sum(1 for asset_id in ids if assets_coll.delete({"_id": asset_id}))
+    return {"deleted": deleted, "requested": len(ids)}
+
+
 @router.get("/audit")
 def list_audit(limit: int = Query(default=100, ge=1, le=500)) -> Any:
     """Every autonomous decision this tenant's system has made, newest first."""

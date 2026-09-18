@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { AgentRail } from "../components/AgentRail";
+import { DateRangePicker } from "../components/DateRangePicker";
 import {
   Badge,
   Card,
   Drawer,
   Empty,
-  Field,
   StatusBadge,
   duration,
   timeAgo,
@@ -34,6 +34,11 @@ export function Runs({
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [triggers, setTriggers] = useState<string[]>([]);
+  const [statuses, setStatuses] = useState<string[]>([]);
+
+  const knownTriggers = useMemo(() => Array.from(new Set(runs.map((r) => r.trigger))).sort(), [runs]);
+  const knownStatuses = useMemo(() => Array.from(new Set(runs.map((r) => r.status))).sort(), [runs]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -41,14 +46,20 @@ export function Runs({
     const toTime = to ? new Date(to).getTime() + 86_400_000 - 1 : null;
     return runs.filter((r) => {
       if (brandId && r.brand_id !== brandId) return false;
+      if (triggers.length && !triggers.includes(r.trigger)) return false;
+      if (statuses.length && !statuses.includes(r.status)) return false;
       if (q && !r.goal.toLowerCase().includes(q)) return false;
       const created = new Date(r.created_at).getTime();
       if (fromTime && created < fromTime) return false;
       if (toTime && created > toTime) return false;
       return true;
     });
-  }, [runs, brandId, search, from, to]);
-  const anyFilterActive = !!(brandId || search || from || to);
+  }, [runs, brandId, triggers, statuses, search, from, to]);
+  const anyFilterActive = !!(brandId || search || from || to || triggers.length || statuses.length);
+
+  function toggleIn(list: string[], setList: (v: string[]) => void, value: string) {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  }
 
   useEffect(() => {
     if (!openRunId) {
@@ -88,12 +99,38 @@ export function Runs({
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
-              <Field label="From"><input className="input mono" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
-              <Field label="To"><input className="input mono" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
+              <DateRangePicker from={from} to={to} onChange={(f, t) => { setFrom(f); setTo(t); }} />
+            </div>
+            <div className="row wrap">
+              <span className="filter-group-label tone-info">Trigger</span>
+              {knownTriggers.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={"chip-toggle chip-info" + (triggers.includes(t) ? " active" : "")}
+                  onClick={() => toggleIn(triggers, setTriggers, t)}
+                >
+                  {t}
+                </button>
+              ))}
+              <span className="filter-group-label tone-warn" style={{ marginLeft: 10 }}>Status</span>
+              {knownStatuses.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={"chip-toggle chip-warn" + (statuses.includes(s) ? " active" : "")}
+                  onClick={() => toggleIn(statuses, setStatuses, s)}
+                >
+                  {s.replace("_", " ")}
+                </button>
+              ))}
               <span className="spacer" />
-              <div className="row" style={{ alignSelf: "flex-end", marginBottom: 13 }}>
+              <div className="row" style={{ alignSelf: "center" }}>
                 {anyFilterActive && (
-                  <button className="btn ghost sm" onClick={() => { setBrandId(""); setSearch(""); setFrom(""); setTo(""); }}>
+                  <button
+                    className="btn ghost sm"
+                    onClick={() => { setBrandId(""); setSearch(""); setFrom(""); setTo(""); setTriggers([]); setStatuses([]); }}
+                  >
                     Clear filters
                   </button>
                 )}
