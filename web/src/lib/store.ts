@@ -45,6 +45,7 @@ export const store = {
       baseUrl: conn.baseUrl,
       color: conn.color ?? PALETTE[list.length % PALETTE.length],
       userEmail: conn.userEmail,
+      role: conn.role,
     };
     if (existing >= 0) list[existing] = full;
     else list.push(full);
