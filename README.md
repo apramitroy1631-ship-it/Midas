@@ -9,6 +9,9 @@ is logged. This deployment runs for a single company (see `backend/scripts/seed.
 though the system underneath is architected multi-tenant — see
 [docs/design/DESIGN_BRIEF.md](docs/design/DESIGN_BRIEF.md) for what that means and why.
 
+**→ [docs/OVERVIEW.md](docs/OVERVIEW.md)** — the general primer: what MIDAS is, who
+it's for, how a campaign actually runs, and everything you can do with it today. Start
+here if you're new to the product.
 **→ [docs/design/DESIGN_BRIEF.md](docs/design/DESIGN_BRIEF.md)** — what MIDAS is, who
 it's for, and what each screen means — written for whoever works on the product or
 design next, not for an engineer.
