@@ -63,12 +63,38 @@ export function AssetEditor({
 }) {
   const availableTabs = tabsFor(asset.channel);
   const [tab, setTab] = useState<Tab>("html");
+  const [current, setCurrent] = useState(asset);
   const [html, setHtml] = useState(() => assetToOutlookHtml(asset.headline, asset.body, asset.call_to_action));
   const [plain, setPlain] = useState(() => plainOf(asset));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const richRef = useRef<HTMLDivElement>(null);
+
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+
+  async function regenerate() {
+    if (!feedback.trim()) return;
+    setRegenerating(true);
+    setRegenError(null);
+    try {
+      const updated = await api.regenerateAsset(conn, current.id, feedback.trim());
+      setCurrent(updated);
+      setHtml(assetToOutlookHtml(updated.headline, updated.body, updated.call_to_action));
+      setPlain(plainOf(updated));
+      setDirty(false);
+      setFeedback("");
+      setFeedbackOpen(false);
+      onSaved?.();
+    } catch (err) {
+      setRegenError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRegenerating(false);
+    }
+  }
 
   function requestClose() {
     if (dirty && !window.confirm("You have unsaved changes to this content. Discard them?")) return;
@@ -100,7 +126,8 @@ export function AssetEditor({
         tab === "plain" ? plain : tab === "rich" ? richRef.current?.innerText ?? plain : stripHtml(html);
       const patch = splitParts(source);
       if (Object.keys(patch).length) {
-        await api.updateAsset(conn, asset.id, patch);
+        const updated = await api.updateAsset(conn, current.id, patch);
+        setCurrent(updated);
       }
       setDirty(false);
       onSaved?.();
@@ -114,13 +141,47 @@ export function AssetEditor({
 
   const subtitle = (
     <span className="row gap-sm" style={{ display: "inline-flex", alignItems: "center" }}>
-      <ChannelIcon channel={asset.channel} size={13} /> {asset.channel}
+      <ChannelIcon channel={current.channel} size={13} /> {current.channel}
     </span>
   );
 
   return (
-    <Drawer title={asset.headline || "Untitled content"} subtitle={subtitle} onClose={requestClose}>
+    <Drawer title={current.headline || "Untitled content"} subtitle={subtitle} onClose={requestClose}>
       {error && <div className="banner danger" style={{ marginBottom: 14 }}><span>✕</span><div>{error}</div></div>}
+
+      <div className="regen-box">
+        <button
+          type="button"
+          className="regen-toggle"
+          onClick={() => setFeedbackOpen((o) => !o)}
+        >
+          <span>✎ Not happy with this? Tell us what's wrong</span>
+          <span className="dim">{feedbackOpen ? "▲" : "▼"}</span>
+        </button>
+        {feedbackOpen && (
+          <div className="col gap-sm" style={{ marginTop: 10 }}>
+            <textarea
+              className="textarea"
+              style={{ minHeight: 70 }}
+              placeholder="e.g. too formal, missing the discount code, CTA should link to the pricing page…"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              disabled={regenerating}
+            />
+            {regenError && (
+              <div className="banner danger" style={{ margin: 0 }}><span>✕</span><div>{regenError}</div></div>
+            )}
+            <div className="row">
+              <button className="btn primary sm" onClick={regenerate} disabled={regenerating || !feedback.trim()}>
+                {regenerating ? "Regenerating…" : "↻ Regenerate with this feedback"}
+              </button>
+              <span className="dim" style={{ fontSize: 11 }}>
+                Reuses this campaign's research &amp; strategy — much faster than a new run.
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="row" style={{ marginBottom: 14 }}>
         <div className="tabs">
