@@ -17,6 +17,7 @@ from app.core.settings import settings
 
 from .base import BaseLLM
 from .react_engine import ReActEngine
+from .retry import with_retry
 from .usage import record as record_usage
 
 logger = logging.getLogger("openai_provider")
@@ -47,15 +48,18 @@ class OpenAIProvider(BaseLLM):
         *,
         response_schema: type[BaseModel],
     ) -> BaseModel:
-        response = self._client.beta.chat.completions.parse(
-            model=self._model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user",   "content": user_prompt},
-            ],
-            temperature=0.7,
-            max_tokens=7048,
-            response_format=response_schema,
+        response = with_retry(
+            lambda: self._client.beta.chat.completions.parse(
+                model=self._model_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user",   "content": user_prompt},
+                ],
+                temperature=0.7,
+                max_tokens=7048,
+                response_format=response_schema,
+            ),
+            label=f"openai:{self._model_name}",
         )
         usage = response.usage
         record_usage(self._model_name, usage.prompt_tokens, usage.completion_tokens)

@@ -33,6 +33,8 @@ from langchain_core.messages import (
 )
 from langchain_core.tools import BaseTool
 
+from .retry import with_retry
+
 logger = logging.getLogger("react_engine")
 
 # Hard ceiling — prevents infinite loops if the LLM keeps calling tools.
@@ -87,7 +89,9 @@ class ReActEngine:
             steps += 1
             logger.info(f"ReActEngine | step={steps}/{self._max_steps}")
 
-            ai_message: AIMessage = self._llm.invoke(messages)
+            ai_message: AIMessage = with_retry(
+                lambda: self._llm.invoke(messages), label=f"react-step-{steps}"
+            )
             messages.append(ai_message)
 
             tool_calls = getattr(ai_message, "tool_calls", None) or []

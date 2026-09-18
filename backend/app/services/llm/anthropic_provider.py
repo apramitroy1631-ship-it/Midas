@@ -20,6 +20,7 @@ from app.core.settings import settings
 
 from .base import BaseLLM
 from .react_engine import ReActEngine
+from .retry import with_retry
 
 logger = logging.getLogger("anthropic_provider")
 
@@ -59,10 +60,13 @@ class AnthropicProvider(BaseLLM):
             f"{schema_hint}"
         )
 
-        response = self._chat.invoke([
-            SystemMessage(content=augmented_system),
-            HumanMessage(content=user_prompt),
-        ])
+        response = with_retry(
+            lambda: self._chat.invoke([
+                SystemMessage(content=augmented_system),
+                HumanMessage(content=user_prompt),
+            ]),
+            label=f"anthropic:{self._model_name}",
+        )
 
         raw_text: str = response.content
         # Strip accidental markdown fences if the model adds them.

@@ -20,9 +20,27 @@ from app.core.settings import settings
 
 from .base import BaseLLM
 from .react_engine import ReActEngine
+from .retry import with_retry
 from .usage import record as record_usage
 
 logger = logging.getLogger("gemini_provider")
+
+
+def _text_of(content: object) -> str:
+    """Gemini's LangChain wrapper doesn't always return a plain string —
+    for some responses `message.content` is a list of parts (plain strings
+    and/or `{"type": "text", "text": ...}` dicts). Flatten either shape."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(item.get("text", ""))
+        return "".join(parts)
+    return str(content)
 
 
 class GeminiProvider(BaseLLM):
@@ -59,12 +77,15 @@ class GeminiProvider(BaseLLM):
             f"{schema_hint}"
         )
 
-        response = self._chat.invoke([
-            SystemMessage(content=augmented_system),
-            HumanMessage(content=user_prompt),
-        ])
+        response = with_retry(
+            lambda: self._chat.invoke([
+                SystemMessage(content=augmented_system),
+                HumanMessage(content=user_prompt),
+            ]),
+            label=f"gemini:{self._model_name}",
+        )
 
-        raw_text: str = response.content
+        raw_text = _text_of(response.content)
         if raw_text.startswith("```"):
             raw_text = raw_text.split("```")[1]
             if raw_text.startswith("json"):
