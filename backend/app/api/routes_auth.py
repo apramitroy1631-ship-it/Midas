@@ -97,6 +97,20 @@ def login(payload: LoginPayload) -> Any:
     }
 
 
+@router.post("/logout")
+def logout(x_api_key: str = Header(default="")) -> Any:
+    """Revokes the session server-side, not just forgetting it in the browser.
+
+    A raw tenant service key has no session to revoke - it's a static
+    credential, not something login issued - so this is a no-op for that
+    case rather than an error; the frontend calls it unconditionally before
+    clearing its own local storage either way.
+    """
+    if x_api_key.startswith(session_repo.PREFIX):
+        session_repo.revoke(x_api_key)
+    return {"ok": True}
+
+
 @router.get("/team")
 def list_team(tenant: dict = Depends(require_tenant_admin)) -> Any:
     return user_repo.list_for_tenant(tenant["id"])

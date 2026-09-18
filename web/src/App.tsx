@@ -2,6 +2,7 @@ import {
   BookOpenText,
   Building2,
   LayoutDashboard,
+  LogOut,
   Moon,
   Rocket,
   ScrollText,
@@ -118,6 +119,10 @@ export default function App() {
 
   function disconnect() {
     if (!conn) return;
+    // Best-effort: revoke the session server-side too, not just forget it in
+    // this browser. A stale/expired token or a raw tenant key (nothing to
+    // revoke) shouldn't block clearing the local connection either way.
+    void api.logout(conn).catch(() => {});
     store.remove(conn.id);
     setConn(store.connections()[0] ?? null);
     setTenant(null);
@@ -211,6 +216,10 @@ export default function App() {
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? <Moon size={15} strokeWidth={2} /> : <Sun size={15} strokeWidth={2} />}
+          </button>
+
+          <button className="btn ghost sm" title="Log out" onClick={disconnect}>
+            <LogOut size={14} strokeWidth={2} /> Log out
           </button>
         </header>
 

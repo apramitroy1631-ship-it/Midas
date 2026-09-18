@@ -49,6 +49,7 @@ async function request<T>(
 
 export const api = {
   me: (c: Connection) => request<Tenant>(c, "/v1/me"),
+  logout: (c: Connection) => request<{ ok: boolean }>(c, "/v1/auth/logout", { method: "POST" }),
   updateMe: (c: Connection, body: unknown) =>
     request<Tenant>(c, "/v1/me", { method: "PATCH", body: JSON.stringify(body) }),
 
