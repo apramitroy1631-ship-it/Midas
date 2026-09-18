@@ -3,8 +3,6 @@ import {
   Building2,
   LayoutDashboard,
   Moon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Rocket,
   ScrollText,
   Settings as SettingsIcon,
@@ -64,7 +62,6 @@ const TITLES: Record<View, string> = {
 export default function App() {
   const [conn, setConn] = useState<Connection | null>(() => store.active());
   const [theme, setTheme] = useState<"dark" | "light">(() => store.theme());
-  const [collapsed, setCollapsed] = useState<boolean>(() => store.sidebarCollapsed());
 
   const [view, setView] = useState<View>("overview");
   const [openRunId, setOpenRunId] = useState<string | null>(null);
@@ -83,13 +80,6 @@ export default function App() {
     document.documentElement.setAttribute("data-theme", theme);
     store.setTheme(theme);
   }, [theme]);
-
-  function toggleCollapsed() {
-    setCollapsed((c) => {
-      store.setSidebarCollapsed(!c);
-      return !c;
-    });
-  }
 
   const refresh = useCallback(async () => {
     if (!conn) return;
@@ -158,39 +148,35 @@ export default function App() {
   };
 
   return (
-    <div className={"app" + (collapsed ? " sidebar-collapsed" : "")}>
+    <div className="app">
       <nav className="sidebar">
         <div className="logo">
           <img src="/brand/cmart-mark.svg" alt="CMART Solutions" className="logo-mark-img" />
-          {!collapsed && (
-            <div>
-              <div className="logo-text" title="Marketing Intelligence &amp; Decision Automation System">MIDAS</div>
-              <div className="logo-sub">by CMART</div>
-            </div>
-          )}
+          <div>
+            <div className="logo-text" title="Marketing Intelligence &amp; Decision Automation System">MIDAS</div>
+            <div className="logo-sub">by CMART</div>
+          </div>
         </div>
 
         {Object.entries(grouped).map(([group, items]) => (
           <div key={group}>
-            {!collapsed && <div className="nav-label">{group}</div>}
+            <div className="nav-label">{group}</div>
             {items.map((item) => (
               <button
                 key={item.id}
                 className={"nav-item" + (view === item.id ? " active" : "")}
-                title={collapsed ? item.label : item.sub}
+                title={item.sub}
                 onClick={() => {
                   setView(item.id);
                   setOpenRunId(null);
                 }}
               >
                 <span className="nav-icon"><item.icon size={15} strokeWidth={2} /></span>
-                {!collapsed && (
-                  <span className="nav-item-text">
-                    <span className="nav-item-label">{item.label}</span>
-                    <span className="nav-item-sub">{item.sub}</span>
-                  </span>
-                )}
-                {!collapsed && counts[item.id] !== undefined && counts[item.id]! > 0 && (
+                <span className="nav-item-text">
+                  <span className="nav-item-label">{item.label}</span>
+                  <span className="nav-item-sub">{item.sub}</span>
+                </span>
+                {counts[item.id] !== undefined && counts[item.id]! > 0 && (
                   <span className="nav-count">{counts[item.id]}</span>
                 )}
               </button>
@@ -199,17 +185,6 @@ export default function App() {
         ))}
 
         <div className="spacer" />
-
-        <button
-          className="nav-item"
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          onClick={toggleCollapsed}
-        >
-          <span className="nav-icon">
-            {collapsed ? <PanelLeftOpen size={15} strokeWidth={2} /> : <PanelLeftClose size={15} strokeWidth={2} />}
-          </span>
-          {!collapsed && <span className="nav-item-text"><span className="nav-item-label">Collapse</span></span>}
-        </button>
       </nav>
 
       <div className="main">
