@@ -25,9 +25,16 @@ pointed at the other afterward with no rebuild.
    Vercel needs to be told which one is the frontend. Framework Preset should
    auto-detect as Vite once the root directory is set; leave the build
    command (`npm run build`) and output directory (`dist`) on their defaults.
-4. Deploy. No environment variables needed — the app takes its backend URL
-   and tenant API key at runtime via the Connect screen (`web/src/lib/store.ts`
-   persists them in that browser's `localStorage`, never at build time).
+4. **Recommended:** under Project Settings → Environment Variables, add
+   `VITE_API_BASE_URL` = your Railway URL (e.g.
+   `https://midas-production-5000.up.railway.app`), then redeploy — Vite bakes
+   it in at build time. With it set, the Connect screen no longer asks anyone
+   for the API base URL; they just sign in. Leave it unset and the screen
+   shows a base-URL field instead (defaulting to `http://127.0.0.1:8100`).
+5. Deploy. Credentials are never baked in: sign-in happens at runtime and
+   lasts for the tab/browser session by default (`sessionStorage`), or across
+   visits if the user ticks "Keep me signed in" (`localStorage`) — see
+   `web/src/lib/store.ts`.
 
 ## Backend — Railway
 
@@ -76,9 +83,9 @@ pointed at the other afterward with no rebuild.
 
 ## Connecting them
 
-Open the Vercel URL, paste the Railway URL as the API base and the seeded
-key as the tenant API key on the Connect screen. That's the whole
-integration step — nothing to configure on either host's side beyond this.
+Open the Vercel URL and sign in with an email/password (or the seeded
+tenant API key). If `VITE_API_BASE_URL` is set on Vercel there's no base URL to
+paste; otherwise paste the Railway URL into the API base field first.
 
 ## Verifying it worked
 

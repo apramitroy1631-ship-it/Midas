@@ -4,6 +4,9 @@ import { api } from "../lib/api";
 import { store } from "../lib/store";
 import type { Connection } from "../lib/types";
 
+// Set on the host (e.g. Vercel) so people never have to type the backend URL.
+const ENV_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+
 /**
  * Sign-in screen.
  *
@@ -20,7 +23,8 @@ export function Connect({
   onCancel?: () => void;
 }) {
   const [mode, setMode] = useState<"signin" | "apikey">("signin");
-  const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:8100");
+  const [baseUrl, setBaseUrl] = useState(ENV_BASE_URL || "http://127.0.0.1:8100");
+  const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -47,6 +51,7 @@ export function Connect({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.detail ?? "Sign-in failed.");
+      store.setRemember(remember);
       const saved = store.save({
         label: body.tenant_name ?? "MIDAS",
         apiKey: body.session_token,
@@ -75,6 +80,7 @@ export function Connect({
     };
     try {
       const tenant = await api.me(candidate);
+      store.setRemember(remember);
       const saved = store.save({
         label: tenant.name,
         apiKey: candidate.apiKey,
@@ -120,9 +126,11 @@ export function Connect({
         )}
 
         <div style={{ marginTop: 18 }}>
-          <Field label="API base URL">
-            <input className="input mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
-          </Field>
+          {!ENV_BASE_URL && (
+            <Field label="API base URL">
+              <input className="input mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+            </Field>
+          )}
 
           {mode === "signin" ? (
             <>
@@ -159,6 +167,11 @@ export function Connect({
             </Field>
           )}
         </div>
+
+        <label className="row" style={{ marginTop: 4, marginBottom: 6, gap: 8, fontSize: 12.5, cursor: "pointer" }}>
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          <span className="muted">Keep me signed in on this device</span>
+        </label>
 
         <div className="row" style={{ marginTop: 8 }}>
           <button
