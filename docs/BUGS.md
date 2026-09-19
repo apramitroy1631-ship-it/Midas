@@ -219,9 +219,6 @@ at the bottom so nobody assumes they're handled.
 
 - **No cancel for a running campaign.** "Stop run" only stops the browser's stream; the
   server keeps working. Needs a cancellation flag the graph checks between steps.
-- **Production has no `GROQ_API_KEY`.** The agent routing now points at Groq, so live
-  campaign runs will fail on Railway until the variable is added (or routing is changed
-  for production).
 - **Duplicate tenants in the production database.** Three "CMART Solutions Pvt Ltd"
   tenant documents were created minutes apart; a login points at the first, but the one
   with real usage is the third.
