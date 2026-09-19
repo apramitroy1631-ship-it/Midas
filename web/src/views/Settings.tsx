@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { DateRangePicker } from "../components/DateRangePicker";
 import { Badge, Card, Empty, Field, ToggleRow } from "../components/ui";
 import { api } from "../lib/api";
@@ -12,6 +12,11 @@ const LEVEL_TONE: Record<string, "ok" | "warn" | "danger" | "info" | "muted"> = 
   CRITICAL: "danger",
 };
 
+/** First line only for the collapsed row; a traceback's full text is in the expanded view. */
+function firstLine(message: string): string {
+  return message.split("\n")[0];
+}
+
 function DeveloperLogs({ conn }: { conn: Connection }) {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -22,6 +27,18 @@ function DeveloperLogs({ conn }: { conn: Connection }) {
   const [to, setTo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  async function copyMessage(id: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
+    } catch {
+      /* clipboard blocked - the text is still selectable in the expanded view */
+    }
+  }
 
   function toggleIn(list: string[], setList: (v: string[]) => void, value: string) {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
@@ -119,16 +136,49 @@ function DeveloperLogs({ conn }: { conn: Connection }) {
               </tr>
             </thead>
             <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} style={{ cursor: "default" }}>
-                  <td className="mono dim" style={{ whiteSpace: "nowrap" }}>
-                    {new Date(e.created_at).toLocaleString()}
-                  </td>
-                  <td><Badge tone={LEVEL_TONE[e.level] ?? "muted"}>{e.level}</Badge></td>
-                  <td className="mono dim">{e.category}</td>
-                  <td className="truncate" style={{ maxWidth: 480 }}>{e.message}</td>
-                </tr>
-              ))}
+              {entries.map((e) => {
+                const open = openId === e.id;
+                return (
+                  <Fragment key={e.id}>
+                    <tr
+                      style={{ cursor: "pointer" }}
+                      title={open ? "Click to collapse" : "Click to see the full message"}
+                      onClick={() => setOpenId(open ? null : e.id)}
+                    >
+                      <td className="mono dim" style={{ whiteSpace: "nowrap" }}>
+                        {new Date(e.created_at).toLocaleString()}
+                      </td>
+                      <td><Badge tone={LEVEL_TONE[e.level] ?? "muted"}>{e.level}</Badge></td>
+                      <td className="mono dim">{e.category}</td>
+                      <td className={open ? "" : "truncate"} style={{ maxWidth: 480 }}>
+                        {open ? "▾ " : "▸ "}{firstLine(e.message)}
+                      </td>
+                    </tr>
+                    {open && (
+                      <tr style={{ cursor: "default" }}>
+                        <td colSpan={4} style={{ background: "var(--surface-2)" }}>
+                          <div className="row" style={{ marginBottom: 8 }}>
+                            <span className="dim" style={{ fontSize: 11.5 }}>Full message</span>
+                            <span className="spacer" />
+                            <button className="btn ghost sm" onClick={() => void copyMessage(e.id, e.message)}>
+                              {copiedId === e.id ? "Copied" : "Copy"}
+                            </button>
+                          </div>
+                          <pre
+                            className="mono"
+                            style={{
+                              margin: 0, fontSize: 11.5, lineHeight: 1.55, whiteSpace: "pre-wrap",
+                              wordBreak: "break-word", maxHeight: 320, overflowY: "auto", userSelect: "text",
+                            }}
+                          >
+                            {e.message}
+                          </pre>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
