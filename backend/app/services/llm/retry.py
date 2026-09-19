@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import time
 from typing import Callable, TypeVar
 
@@ -36,16 +37,39 @@ _RETRYABLE_MARKERS = (
 # no amount of backoff inside one process fixes that before the quota
 # actually resets. Retrying it just burns ~15s to fail anyway; better to
 # say so immediately.
-_DAILY_QUOTA_MARKERS = ("perday", "per_day", "daily")
+#
+# "per day" / "(tpd)" cover Groq's wording ("...on tokens per day (TPD)"),
+# which the Gemini-shaped markers above missed - so a spent Groq daily cap was
+# being retried with backoff before failing instead of failing immediately.
+_DAILY_QUOTA_MARKERS = ("perday", "per_day", "per day", "daily", "(tpd)", "(rpd)")
 
 _MAX_ATTEMPTS = 4
 _BASE_DELAY_S = 2.0
 
 
-def _is_retryable(exc: Exception) -> bool:
+class LLMQuotaError(RuntimeError):
+    """The provider's daily allowance is spent. Message is written for the
+    person watching the run, not for a developer reading a raw API error."""
+
+
+def _is_daily_quota(exc: Exception) -> bool:
     text = str(exc).lower()
-    if any(marker in text for marker in _DAILY_QUOTA_MARKERS):
+    return any(marker in text for marker in _DAILY_QUOTA_MARKERS)
+
+
+def _quota_message(exc: Exception) -> str:
+    # Groq says "Please try again in 25m37.056s." - pass that along when present.
+    match = re.search(r"try again in ([0-9hms.]+)", str(exc))
+    wait = match.group(1).rstrip(".") if match else None
+    if wait:
+        return f"The AI provider's daily usage limit has been reached. It should free up in about {wait}."
+    return "The AI provider's daily usage limit has been reached. Try again later, or raise the limit with the provider."
+
+
+def _is_retryable(exc: Exception) -> bool:
+    if _is_daily_quota(exc):
         return False
+    text = str(exc).lower()
     return any(marker in text for marker in _RETRYABLE_MARKERS)
 
 
@@ -59,6 +83,8 @@ def with_retry(fn: Callable[[], T], *, label: str = "llm-call") -> T:
             return fn()
         except Exception as exc:  # noqa: BLE001 - any provider's SDK can raise here
             last_exc = exc
+            if _is_daily_quota(exc):
+                raise LLMQuotaError(_quota_message(exc)) from exc
             if attempt == _MAX_ATTEMPTS or not _is_retryable(exc):
                 raise
             delay = _BASE_DELAY_S * (2 ** (attempt - 1)) + random.uniform(0, 1)

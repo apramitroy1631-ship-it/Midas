@@ -79,33 +79,63 @@ class GroqProvider(BaseLLM):
             f"{schema_hint}"
         )
 
-        response = with_retry(
-            lambda: self._chat.invoke([
-                SystemMessage(content=augmented_system),
-                HumanMessage(content=user_prompt),
-            ]),
-            label=f"groq:{self._model_name}",
-        )
+        # JSON mode makes the API itself enforce syntactically valid JSON; the
+        # smaller gpt-oss model was dropping a closing bracket and failing a
+        # whole run at the last step. Still validate + retry below, since JSON
+        # mode guarantees valid JSON, not that it matches our schema.
+        json_chat = self._chat.bind(response_format={"type": "json_object"})
 
-        raw_text = _text_of(response.content)
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
+        prompt = user_prompt
+        for attempt in (1, 2):
+            try:
+                response = with_retry(
+                    lambda: json_chat.invoke([
+                        SystemMessage(content=augmented_system),
+                        HumanMessage(content=prompt),
+                    ]),
+                    label=f"groq:{self._model_name}",
+                )
+            except Exception as exc:  # noqa: BLE001
+                # Groq's own 400 when the model produced no valid JSON at all
+                # (e.g. hidden reasoning used up the output budget) - transient
+                # in practice, worth exactly one more try.
+                if attempt == 1 and "json_validate_failed" in str(exc):
+                    logger.warning("groq | JSON mode produced nothing valid, retrying once | model=%s", self._model_name)
+                    continue
+                raise
 
-        parsed = response_schema.model_validate_json(raw_text.strip())
+            usage = getattr(response, "usage_metadata", None) or {}
+            record_usage(
+                self._model_name,
+                usage.get("input_tokens", 0),
+                usage.get("output_tokens", 0),
+            )
+            logger.info(
+                f"LLM_CALL | provider=groq | model={self._model_name} | "
+                f"tokens={usage.get('total_tokens', 0)}"
+            )
 
-        usage = getattr(response, "usage_metadata", None) or {}
-        record_usage(
-            self._model_name,
-            usage.get("input_tokens", 0),
-            usage.get("output_tokens", 0),
-        )
-        logger.info(
-            f"LLM_CALL | provider=groq | model={self._model_name} | "
-            f"tokens={usage.get('total_tokens', 0)}"
-        )
-        return parsed
+            raw_text = _text_of(response.content)
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+
+            try:
+                return response_schema.model_validate_json(raw_text.strip())
+            except ValueError as exc:  # pydantic ValidationError subclasses ValueError
+                if attempt == 2:
+                    raise
+                logger.warning(
+                    "groq | reply didn't match schema, retrying once | model=%s | %s",
+                    self._model_name, str(exc)[:300],
+                )
+                prompt = (
+                    f"{user_prompt}\n\n"
+                    "Your previous reply was not valid for the required JSON schema "
+                    f"({str(exc)[:300]}). Reply again with the complete, corrected JSON object only."
+                )
+        raise RuntimeError("unreachable")  # pragma: no cover
 
     # ------------------------------------------------------------------
     # Mode 2 — ReAct loop → structured synthesis
