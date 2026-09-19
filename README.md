@@ -25,6 +25,7 @@ backend on Railway (or any container host).
 **→ [docs/BACKEND_GUIDE.md](docs/BACKEND_GUIDE.md)** — onboarding for a backend engineer.
 **→ [docs/FRONTEND_GUIDE.md](docs/FRONTEND_GUIDE.md)** — onboarding for a frontend engineer.
 **→ [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md)** — the QA click-through checklist.
+**→ [docs/BUGS.md](docs/BUGS.md)** — resolved bugs, what caused each, and how it was fixed.
 
 ---
 
