@@ -25,12 +25,13 @@ pointed at the other afterward with no rebuild.
    Vercel needs to be told which one is the frontend. Framework Preset should
    auto-detect as Vite once the root directory is set; leave the build
    command (`npm run build`) and output directory (`dist`) on their defaults.
-4. **Recommended:** under Project Settings → Environment Variables, add
-   `VITE_API_BASE_URL` = your Railway URL (e.g.
-   `https://midas-production-5000.up.railway.app`), then redeploy — Vite bakes
-   it in at build time. With it set, the Connect screen no longer asks anyone
-   for the API base URL; they just sign in. Leave it unset and the screen
-   shows a base-URL field instead (defaulting to `http://127.0.0.1:8100`).
+4. **Nothing to configure for the API URL.** `web/.env.production` (committed) sets
+   `VITE_API_BASE_URL` to the Railway URL, and `vite build` applies it automatically,
+   so the Connect screen doesn't ask anyone for it. If the backend moves, edit that
+   file. You can still override it per-deployment with a `VITE_API_BASE_URL`
+   environment variable in Vercel's Project Settings. With neither set (e.g. local
+   `npm run dev`) the screen shows a base-URL field defaulting to
+   `http://127.0.0.1:8100`.
 5. Deploy. Credentials are never baked in: sign-in happens at runtime and
    lasts for the tab/browser session by default (`sessionStorage`), or across
    visits if the user ticks "Keep me signed in" (`localStorage`) — see
