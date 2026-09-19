@@ -13,6 +13,7 @@ since retrying those would just waste time before failing anyway.
 from __future__ import annotations
 
 import logging
+import math
 import random
 import re
 import time
@@ -57,12 +58,32 @@ def _is_daily_quota(exc: Exception) -> bool:
     return any(marker in text for marker in _DAILY_QUOTA_MARKERS)
 
 
+def _humanize_wait(raw: str) -> str | None:
+    """'7m10.704s' -> 'about 8 minutes'. Rounds up so we never promise sooner
+    than it really frees up."""
+    match = re.fullmatch(r"(?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?", raw)
+    if not match or not any(match.groups()):
+        return None
+    hours, minutes, seconds = (float(g) if g else 0.0 for g in match.groups())
+    total = hours * 3600 + minutes * 60 + seconds
+    if total < 60:
+        return "less than a minute"
+    mins = math.ceil(total / 60)
+    if mins < 60:
+        return f"about {mins} minute{'s' if mins != 1 else ''}"
+    h, m = divmod(mins, 60)
+    parts = [f"{h} hour{'s' if h != 1 else ''}"]
+    if m:
+        parts.append(f"{m} minute{'s' if m != 1 else ''}")
+    return "about " + " ".join(parts)
+
+
 def _quota_message(exc: Exception) -> str:
-    # Groq says "Please try again in 25m37.056s." - pass that along when present.
+    # Groq says "Please try again in 7m10.704s." - turn that into something readable.
     match = re.search(r"try again in ([0-9hms.]+)", str(exc))
-    wait = match.group(1).rstrip(".") if match else None
+    wait = _humanize_wait(match.group(1).rstrip(".")) if match else None
     if wait:
-        return f"The AI provider's daily usage limit has been reached. It should free up in about {wait}."
+        return f"The AI provider's daily usage limit has been reached. Please try again in {wait}."
     return "The AI provider's daily usage limit has been reached. Try again later, or raise the limit with the provider."
 
 
