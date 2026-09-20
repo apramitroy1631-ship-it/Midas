@@ -573,6 +573,44 @@ a { color: var(--info); text-decoration: none; }
   padding: 10px 12px; margin-bottom: 16px;
   background: color-mix(in srgb, var(--accent-2) 5%, transparent);
 }
+/* Regenerate progress: a bar that eases forward, stage list, and a shimmer over
+   the content being rewritten. Motion is decoration - it's all switched off for
+   people who ask their OS for reduced motion. */
+.regen-progress { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.regen-bar { height: 5px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+.regen-bar-fill {
+  position: relative; height: 100%; border-radius: 5px; overflow: hidden;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.4s ease;
+}
+.regen-bar-fill::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.45) 50%, transparent 80%);
+  background-size: 200% 100%; animation: regen-sweep 1.3s linear infinite;
+}
+.regen-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+.regen-steps li { display: flex; align-items: center; gap: 8px; color: var(--text-dim); transition: color 0.2s; }
+.regen-steps li.active { color: var(--text); font-weight: 600; }
+.regen-steps li.done { color: var(--ok); }
+.regen-step-mark { width: 14px; display: inline-flex; justify-content: center; font-size: 11px; }
+
+.regen-target { position: relative; border-radius: var(--radius-sm); }
+.regen-working > * { opacity: 0.5; transition: opacity 0.25s; pointer-events: none; }
+.regen-working::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, var(--accent-2-dim) 50%, transparent 70%);
+  background-size: 200% 100%; animation: regen-sweep 1.6s linear infinite;
+}
+.regen-flash { animation: regen-flash 1.6s ease-out; }
+@keyframes regen-sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes regen-flash {
+  0% { box-shadow: 0 0 0 2px var(--ok), 0 0 26px var(--ok-dim); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .regen-bar-fill::after, .regen-working::after, .regen-flash { animation: none; }
+}
+
 .regen-toggle {
   display: flex; align-items: center; justify-content: space-between; width: 100%;
   background: none; border: none; cursor: pointer; padding: 0;

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { ChannelIcon } from "./ChannelIcon";
+import { RegenProgress } from "./RegenProgress";
 import { Drawer } from "./ui";
 import { api } from "../lib/api";
 import { assetToOutlookHtml, downloadFile, toRtf } from "../lib/download";
@@ -74,6 +75,7 @@ export function AssetEditor({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [regenerating, setRegenerating] = useState(false);
+  const [justUpdated, setJustUpdated] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
 
   async function regenerate() {
@@ -88,6 +90,8 @@ export function AssetEditor({
       setDirty(false);
       setFeedback("");
       setFeedbackOpen(false);
+      setJustUpdated(true);
+      setTimeout(() => setJustUpdated(false), 1800);
       onSaved?.();
     } catch (err) {
       setRegenError(err instanceof Error ? err.message : String(err));
@@ -169,14 +173,20 @@ export function AssetEditor({
             {current.qa_passed === true && (
               <div style={{ fontSize: 12, color: "var(--ok)" }}>
                 ✓ Checked against your brand rules: passed
-                {current.qa_auto_fixed ? " (one issue was found and fixed automatically)" : ""}.
+                {current.qa_auto_fixed
+                  ? ` (the review flagged something and it was revised ${current.qa_revisions ?? 1} time${(current.qa_revisions ?? 1) === 1 ? "" : "s"} until it passed)`
+                  : ""}.
               </div>
             )}
             {current.qa_passed === false && (
               <div className="banner warn" style={{ margin: 0 }}>
                 <span>⚠</span>
                 <div>
-                  <strong>Still flagged after one automatic fix.</strong> Review before using:
+                  <strong>
+                    Still flagged after {current.qa_revisions ?? 1} automatic revision{(current.qa_revisions ?? 1) === 1 ? "" : "s"}
+                    {" "}(the revision limit).
+                  </strong>{" "}
+                  Review before using:
                   <ul className="list-tight" style={{ margin: "4px 0 0" }}>
                     {(current.qa_issues ?? []).filter((q) => q.severity === "critical").map((q, i) => (
                       <li key={i}>{q.issue}</li>
@@ -211,10 +221,12 @@ export function AssetEditor({
                 Reuses this campaign's research &amp; strategy, then checks the result against your brand rules.
               </span>
             </div>
+            {regenerating && <RegenProgress />}
           </div>
         )}
       </div>
 
+      <div className={"regen-target" + (regenerating ? " regen-working" : "") + (justUpdated ? " regen-flash" : "")}>
       <div className="row" style={{ marginBottom: 14 }}>
         <div className="tabs">
           {availableTabs.map((t) => (
@@ -286,6 +298,7 @@ export function AssetEditor({
           </div>
         </div>
       )}
+      </div>
 
       <div className="row" style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-soft)" }}>
         <button className="btn primary" onClick={save} disabled={saving || !dirty}>
