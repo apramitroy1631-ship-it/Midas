@@ -105,6 +105,22 @@ at the bottom so nobody assumes they're handled.
 - **Fix (workaround only):** restarted the backend and marked the run failed by hand.
   A real cancel endpoint is still open — see below.
 
+### 10a. LinkedIn posts came out too long, and "regenerate" over- or under-corrected
+- **Symptom:** LinkedIn posts ran blog-sized. Regenerating with "make it shorter" collapsed
+  the post to almost nothing, and unrelated feedback (tone, a missing detail) also changed
+  the length.
+- **Cause:** the Content agent had no length guidance at all ("write natively per channel"),
+  and a regenerate got the operator's comment plus the old draft with no idea how much to
+  change, so the model guessed.
+- **Fix:** per-channel word ranges (LinkedIn 60-150, email 80-200, blog 600-1,200) given to
+  the model as numbers. A regenerate now gets a target computed in code: length held
+  steady (+/-10%) unless the feedback is about length; an explicit number ("under 100
+  words") is honoured; "shorter" is a cut of about a quarter to a third, not a collapse;
+  "longer" grows by about a third. The prompt also says to change only what the feedback
+  asks. The result is checked afterwards and retried once if it ignores the range.
+- **Where:** `backend/app/agents/channel_specs.py`, `content.py`,
+  `backend/app/services/regenerate.py`.
+
 ---
 
 ## Secrets and configuration
@@ -212,6 +228,13 @@ at the bottom so nobody assumes they're handled.
   width override stopped the CSS transition from animating back.
 - **Fix:** removed collapse, peek and the idle timer entirely; the sidebar is fixed.
 - **Where:** `web/src/App.tsx`, `web/src/styles.css`.
+
+### 22a. One long blog filled the whole Content Library
+- **Symptom:** a card's full body was printed, so a long blog dwarfed every other card, and
+  bulleted LinkedIn copy ran together into one paragraph.
+- **Cause:** the card body had no height cap and collapsed line breaks.
+- **Fix:** cards are a 7-line preview (clicking opens the full text) and keep line breaks.
+- **Where:** `web/src/styles.css` (`.asset-body`).
 
 ---
 

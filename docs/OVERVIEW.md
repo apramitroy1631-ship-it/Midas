@@ -120,7 +120,10 @@ for Outlook), and if you're not happy with a result, **"Not happy with this?
 Tell us what's wrong"** takes your feedback and regenerates just that one
 asset — reusing the campaign's existing research and strategy instead of
 re-running the whole pipeline, so a targeted fix takes a fraction of the time
-a new run would.
+a new run would. The rewrite is sized in code (so "shorter" means a real but
+not total cut, and unrelated feedback doesn't change the length), remembers
+earlier feedback on that asset, and is checked against the brand's rules —
+with one automatic fix if it finds a blocking issue.
 
 **Decision Log** — the accountability trail: every autonomous decision
 (published, dropped, partially published, abandoned), why, filterable by
