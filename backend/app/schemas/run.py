@@ -64,6 +64,13 @@ class AssetResponse(BaseModel):
     seo: dict[str, Any] | None = None
     goal: str = ""
     created_at: str = ""
+    # Set by regenerate-with-feedback (absent on assets straight from a run).
+    brand_safety_score: int | None = None
+    goal_alignment_score: int | None = None
+    qa_passed: bool | None = None
+    qa_auto_fixed: bool = False
+    qa_issues: list[dict[str, Any]] = Field(default_factory=list)
+    feedback_history: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class AssetUpdate(BaseModel):
