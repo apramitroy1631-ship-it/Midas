@@ -121,6 +121,21 @@ at the bottom so nobody assumes they're handled.
 - **Where:** `backend/app/agents/channel_specs.py`, `content.py`,
   `backend/app/services/regenerate.py`.
 
+### 10b. Regenerate flagged a LinkedIn post for a blog's word count, and stopped after one fix
+- **Symptom:** after a regenerate the editor said a LinkedIn post was "well below the
+  required 800-1000 words", and it stayed flagged.
+- **Cause:** the new brand-rule check judged the asset against the whole campaign's success
+  criteria, which included the blog's length target. It also allowed only one automatic fix,
+  and the fix pass was told to satisfy that criterion while the length rule capped the post
+  at 150 words, so the two contradicted each other.
+- **Fix:** the review is scoped to the asset's own channel (other channels' targets and
+  campaign-wide outcomes such as open rates aren't grounds for a blocking issue, and the
+  channel's expected length is stated). The fix step is now the normal qa -> revise -> content
+  loop, repeated up to the tenant's revision budget (capped globally), with the operator's
+  feedback still applied on every pass. A draft still failing once the budget is spent is saved
+  with the issues shown.
+- **Where:** `backend/app/services/regenerate.py`, `agents/qa.py`, `agents/content.py`.
+
 ---
 
 ## Secrets and configuration
@@ -235,6 +250,14 @@ at the bottom so nobody assumes they're handled.
 - **Cause:** the card body had no height cap and collapsed line breaks.
 - **Fix:** cards are a 7-line preview (clicking opens the full text) and keep line breaks.
 - **Where:** `web/src/styles.css` (`.asset-body`).
+
+### 22b. Regenerate looked frozen for 30-60+ seconds
+- **Symptom:** clicking Regenerate only changed the button label, with no sign of progress.
+- **Cause:** a single request with no feedback while the server writes, reviews and revises.
+- **Fix:** a progress panel (easing bar, estimated stages, elapsed time), a shimmer over the
+  content being rewritten, and a highlight when the new version lands. Stages are labelled as
+  estimates because the server doesn't report them; motion respects reduced-motion settings.
+- **Where:** `web/src/components/RegenProgress.tsx`, `AssetEditor.tsx`, `web/src/styles.css`.
 
 ---
 

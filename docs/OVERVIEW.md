@@ -122,8 +122,11 @@ asset — reusing the campaign's existing research and strategy instead of
 re-running the whole pipeline, so a targeted fix takes a fraction of the time
 a new run would. The rewrite is sized in code (so "shorter" means a real but
 not total cut, and unrelated feedback doesn't change the length), remembers
-earlier feedback on that asset, and is checked against the brand's rules —
-with one automatic fix if it finds a blocking issue.
+earlier feedback on that asset, and then goes through the same review loop as
+a normal run: it's checked against the brand's rules and, if the review finds a
+blocking issue, revised and re-checked up to the tenant's revision budget. The
+review only judges that one channel's asset, so another channel's targets can't
+fail it. A live progress panel shows the stages while it works.
 
 **Decision Log** — the accountability trail: every autonomous decision
 (published, dropped, partially published, abandoned), why, filterable by
