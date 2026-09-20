@@ -8,11 +8,14 @@ pipeline run. Two things keep that fast path from being a blind one:
 
 - Earlier feedback on the same asset is remembered and passed along, so a
   later "add the discount code" doesn't undo an earlier "make it shorter".
-- The new draft goes through the same QA agent as a normal run (brand rules,
-  banned phrases, unsupported claims). If it finds a blocking issue the draft
-  gets exactly one automatic fix and is re-checked. It never loops, and it
-  never blocks saving: the operator is still the final judge, so a draft that
-  still fails is saved with the issues attached for them to see.
+- The new draft goes through the same review loop as a normal run: QA checks it
+  (brand rules, banned phrases, unsupported claims), and if it finds a blocking
+  issue the draft is revised with those issues and re-checked, up to the
+  tenant's revision budget - the same qa -> revise -> content cycle a
+  campaign gets. QA is scoped to this asset's channel, so campaign-wide goals
+  or another channel's targets (a blog's word count) can't fail a LinkedIn post.
+  It never blocks saving: the operator is still the final judge, so a draft
+  that still fails once the budget is spent is saved with the issues attached.
 """
 from __future__ import annotations
 
@@ -23,6 +26,7 @@ from typing import Any
 from app.agents.channel_specs import rewrite_target, word_count
 from app.agents.content import ContentAgent
 from app.agents.qa import QAAgent
+from app.core.settings import settings
 from app.db.scoped import assets as assets_coll
 from app.db.scoped import audit as audit_coll
 from app.db.scoped import utcnow
@@ -37,11 +41,6 @@ _HISTORY_KEPT = 20
 
 def _critical(qa: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [i for i in ((qa or {}).get("issues") or []) if i.get("severity") == "critical"]
-
-
-def _fix_note(issues: list[dict[str, Any]]) -> str:
-    lines = [f"- {i.get('issue', '')} (fix: {i.get('fix', '')})" for i in issues]
-    return "\n\nA quality check found blocking problems in your draft. Fix these as well:\n" + "\n".join(lines)
 
 
 def regenerate_asset(
@@ -66,7 +65,9 @@ def regenerate_asset(
         previous_words = word_count(asset.get("body", ""))
         length_target = rewrite_target(channel, previous_words, feedback)
 
-        def write(previous: dict[str, Any], operator_feedback: str) -> dict[str, Any]:
+        def write(
+            previous: dict[str, Any], qa_report: dict[str, Any] | None = None, revision: int = 0
+        ) -> dict[str, Any]:
             result = ContentAgent(overrides).run(
                 brand_context=brand_context,
                 plan=run.get("plan") or {},
@@ -83,8 +84,10 @@ def regenerate_asset(
                         }
                     ]
                 },
-                operator_feedback=operator_feedback,
+                operator_feedback=feedback,
                 earlier_feedback=earlier,
+                qa_report=qa_report,
+                revision=revision,
                 only_channel=channel,
                 length_target=length_target,
                 previous_words=previous_words,
@@ -102,21 +105,25 @@ def regenerate_asset(
                     content={"assets": [{**draft, "channel": channel}]},
                     research=run.get("research") or {},
                     policy=policy,
+                    only_channel=channel,
                 ).model_dump()
             except Exception:  # noqa: BLE001 - the check must never lose the operator's rewrite
                 logger.exception("regenerate | quality check failed to run | asset=%s", asset["_id"])
                 return None
 
-        draft = write(asset, feedback)
-        qa = check(draft)
+        # Same budget a normal run gets (tenant policy, capped by the global ceiling).
+        budget = max(0, min(int(policy.get("max_revision_cycles", 2)), settings.max_revision_cycles))
 
-        auto_fixed = False
-        blocking = _critical(qa)
-        if blocking:
-            logger.info("regenerate | qa found %d blocking issue(s), one fix pass | asset=%s", len(blocking), asset["_id"])
-            draft = write(draft, feedback + _fix_note(blocking))
+        draft = write(asset)
+        qa = check(draft)
+        revisions = 0
+        while _critical(qa) and revisions < budget:
+            revisions += 1
+            logger.info(
+                "regenerate | qa blocked the draft, revision %d/%d | asset=%s", revisions, budget, asset["_id"]
+            )
+            draft = write(draft, qa_report=qa, revision=revisions)
             qa = check(draft)
-            auto_fixed = True
 
         remaining = _critical(qa)
         history.append({"feedback": feedback, "at": utcnow()})
@@ -127,7 +134,8 @@ def regenerate_asset(
             "feedback_history": history[-_HISTORY_KEPT:],
             # None = the check couldn't run; shown as "not checked", not as a pass.
             "qa_passed": None if qa is None else not remaining,
-            "qa_auto_fixed": auto_fixed,
+            "qa_auto_fixed": revisions > 0 and not remaining,
+            "qa_revisions": revisions,
             "qa_issues": [
                 {k: i.get(k) for k in ("severity", "issue", "fix")} for i in ((qa or {}).get("issues") or [])
             ][:6],
@@ -150,13 +158,13 @@ def regenerate_asset(
                     "channel": channel,
                     "feedback": feedback,
                     "qa_passed": changes["qa_passed"],
-                    "auto_fixed": auto_fixed,
+                    "revisions": revisions,
                 },
             }
         )
         logger.info(
-            "regenerate | asset=%s | channel=%s | qa_passed=%s | auto_fixed=%s",
-            asset["_id"], channel, changes["qa_passed"], auto_fixed,
+            "regenerate | asset=%s | channel=%s | qa_passed=%s | revisions=%d",
+            asset["_id"], channel, changes["qa_passed"], revisions,
         )
 
         return assets_coll.find_one({"_id": asset["_id"]})

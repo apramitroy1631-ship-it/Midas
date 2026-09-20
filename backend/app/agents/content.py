@@ -67,7 +67,9 @@ class ContentAgent(Agent):
                 "with a critical fix. Leave unflagged assets alone."
             )
             feedback = (
-                block("CRITICAL ISSUES - ALL MUST BE FIXED", critical)
+                block("OPERATOR FEEDBACK - STILL MUST BE HONOURED (this revision only fixes the QA issues below)", operator_feedback)
+                + block("EARLIER OPERATOR FEEDBACK - STILL APPLIES", earlier_feedback)
+                + block("CRITICAL ISSUES - ALL MUST BE FIXED", critical)
                 + block("ADVISORY IMPROVEMENTS", advisory)
                 + block("QA VERDICT", qa_report.get("verdict"))
                 + block("YOUR PREVIOUS DRAFT", previous_content)

@@ -69,6 +69,7 @@ class AssetResponse(BaseModel):
     goal_alignment_score: int | None = None
     qa_passed: bool | None = None
     qa_auto_fixed: bool = False
+    qa_revisions: int = 0
     qa_issues: list[dict[str, Any]] = Field(default_factory=list)
     feedback_history: list[dict[str, Any]] = Field(default_factory=list)
 

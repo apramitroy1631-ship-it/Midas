@@ -8,6 +8,7 @@ verdict decides whether content publishes or goes back for revision.
 from __future__ import annotations
 
 from app.agents.base import Agent, block
+from app.agents.channel_specs import default_length_block
 from app.schemas.agents import QAReport
 
 SYSTEM_PROMPT = """You are the final reviewer. Nothing you approve is seen by a human before it is published, so you are the only thing standing between a bad asset and the brand's audience. Review accordingly.
@@ -47,6 +48,7 @@ class QAAgent(Agent):
         research: dict,
         policy: dict,
         revision: int = 0,
+        only_channel: str | None = None,
         **_: object,
     ) -> str:
         restrictions = ((brand_context.get("memory") or {}).get("brand_guidelines") or {}).get(
@@ -57,9 +59,22 @@ class QAAgent(Agent):
             if revision
             else ""
         )
+        scope_note = (
+            block(
+                "REVIEW SCOPE - you are reviewing ONE asset, the " + only_channel + " one",
+                "Judge only that asset. Success criteria about other channels (e.g. a blog's word count) "
+                "and campaign-wide outcomes one asset cannot deliver on its own (open rates, number of demo "
+                "requests) are NOT grounds for a critical issue. This channel's expected body length is "
+                + str(default_length_block([only_channel]).get(only_channel, "not fixed"))
+                + "; brevity inside that range is correct, not a defect.",
+            )
+            if only_channel
+            else ""
+        )
         return (
             "Review this campaign content for publication.\n"
             + pass_note
+            + scope_note
             + block("BRAND", {k: brand_context.get(k) for k in ("name", "industry", "tone", "usp")})
             + block("BRAND CONTENT RESTRICTIONS (absolute)", restrictions)
             + block("TENANT POLICY (absolute)", policy)
