@@ -158,6 +158,38 @@ export function AssetEditor({
           <span>✎ Not happy with this? Tell us what's wrong</span>
           <span className="dim">{feedbackOpen ? "▲" : "▼"}</span>
         </button>
+        {!!current.feedback_history?.length && (
+          <div className="col gap-sm" style={{ marginTop: 10 }}>
+            <div className="dim" style={{ fontSize: 11.5 }}>
+              Earlier feedback still being applied:{" "}
+              {current.feedback_history.slice(-4).map((h, i) => (
+                <span key={i}>{i > 0 && " · "}“{h.feedback}”</span>
+              ))}
+            </div>
+            {current.qa_passed === true && (
+              <div style={{ fontSize: 12, color: "var(--ok)" }}>
+                ✓ Checked against your brand rules: passed
+                {current.qa_auto_fixed ? " (one issue was found and fixed automatically)" : ""}.
+              </div>
+            )}
+            {current.qa_passed === false && (
+              <div className="banner warn" style={{ margin: 0 }}>
+                <span>⚠</span>
+                <div>
+                  <strong>Still flagged after one automatic fix.</strong> Review before using:
+                  <ul className="list-tight" style={{ margin: "4px 0 0" }}>
+                    {(current.qa_issues ?? []).filter((q) => q.severity === "critical").map((q, i) => (
+                      <li key={i}>{q.issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+            {current.qa_passed == null && (
+              <div className="dim" style={{ fontSize: 12 }}>The brand-rule check couldn't run on this version.</div>
+            )}
+          </div>
+        )}
         {feedbackOpen && (
           <div className="col gap-sm" style={{ marginTop: 10 }}>
             <textarea
@@ -176,7 +208,7 @@ export function AssetEditor({
                 {regenerating ? "Regenerating…" : "↻ Regenerate with this feedback"}
               </button>
               <span className="dim" style={{ fontSize: 11 }}>
-                Reuses this campaign's research &amp; strategy — much faster than a new run.
+                Reuses this campaign's research &amp; strategy, then checks the result against your brand rules.
               </span>
             </div>
           </div>

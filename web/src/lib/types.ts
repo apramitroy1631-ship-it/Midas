@@ -108,6 +108,11 @@ export interface Asset {
     hashtags?: string[];
   } | null;
   created_at: string;
+  /** Only meaningful once the asset has been regenerated from feedback. */
+  qa_passed?: boolean | null;
+  qa_auto_fixed?: boolean;
+  qa_issues?: { severity: string; issue: string; fix: string }[];
+  feedback_history?: { feedback: string; at: string }[];
 }
 
 export interface AuditEntry {
